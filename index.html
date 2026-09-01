@@ -4,12 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sticker Sheet & Cutline Studio ✨</title>
-    <!-- Google Fonts khas Souffales -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Quicksand:wght@500;600;700&display=swap" rel="stylesheet">
     
-    <!-- JSZip & FileSaver untuk Multi-Page Download ZIP -->
+    <!-- Library ZIP & Save -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
 
@@ -106,7 +105,6 @@
             font-size: 0.85rem;
             margin-bottom: 6px;
             color: var(--brown-text);
-            letter-spacing: 0.02em;
         }
 
         input[type="number"], select {
@@ -120,12 +118,6 @@
             color: var(--brown-dark);
             font-weight: 700;
             outline: none;
-            transition: all 0.2s ease;
-        }
-
-        input[type="number"]:focus, select:focus {
-            border-color: var(--brown-btn);
-            background-color: #FFFFFF;
         }
 
         .custom-dimensions {
@@ -141,7 +133,7 @@
             border: 2px dashed var(--border-dashed);
             color: var(--brown-dark);
             background-color: var(--card-cream);
-            padding: 16px;
+            padding: 18px;
             border-radius: var(--radius-lg);
             font-family: 'Fredoka', cursive;
             font-weight: 600;
@@ -157,7 +149,7 @@
             display: flex;
             flex-direction: column;
             gap: 12px;
-            max-height: 400px;
+            max-height: 380px;
             overflow-y: auto;
         }
 
@@ -172,23 +164,17 @@
             align-items: center;
         }
 
-        .sticker-thumb-wrapper {
-            width: 54px;
-            height: 54px;
-            background: #FFFFFF;
-            border: 1px solid var(--border-solid);
+        .sticker-thumb {
+            width: 50px;
+            height: 50px;
+            object-fit: contain;
+            background: #fff;
             border-radius: var(--radius-md);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-shrink: 0;
-            background-image: linear-gradient(45deg, #f7efe5 25%, transparent 25%), linear-gradient(-45deg, #f7efe5 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #f7efe5 75%), linear-gradient(-45deg, transparent 75%, #f7efe5 75%);
-            background-size: 8px 8px;
+            border: 1px solid var(--border-solid);
         }
 
-        .sticker-thumb-wrapper img { max-width: 100%; max-height: 100%; object-fit: contain; }
         .sticker-details { flex-grow: 1; }
-        .sticker-filename { font-weight: 700; font-size: 0.85rem; margin-bottom: 4px; color: var(--brown-dark); max-width: 190px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .sticker-filename { font-weight: 700; font-size: 0.85rem; margin-bottom: 4px; color: var(--brown-dark); max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
         .sticker-inputs { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; }
         .sticker-inputs label { font-size: 0.7rem; margin-bottom: 2px; }
@@ -206,9 +192,6 @@
             border: none;
             font-weight: bold;
             cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
         }
         .btn-delete:hover { background: var(--danger); color: #FFF; }
 
@@ -224,24 +207,18 @@
             cursor: pointer;
             width: 100%;
             margin-top: 16px;
-            transition: all 0.2s ease;
             box-shadow: 0 4px 0 var(--brown-dark);
         }
 
-        .btn:hover { background: var(--brown-btn-hover); transform: translateY(-1px); }
-        .btn:active { transform: translateY(3px); box-shadow: none; }
+        .btn:hover { background: var(--brown-btn-hover); }
 
         .download-bar { display: none; flex-direction: column; gap: 10px; margin-bottom: 20px; }
         .download-row { display: flex; gap: 10px; }
         .download-bar .btn { margin-top: 0; flex: 1; font-size: 0.88rem; padding: 12px 8px; }
         .btn-success { background: #7CA982; box-shadow: 0 4px 0 #5B8361; }
-        .btn-success:hover { background: #6B9871; }
         .btn-danger { background: #D98880; box-shadow: 0 4px 0 #B5655D; }
-        .btn-danger:hover { background: #C7776F; }
         .btn-zip { background: #E5A93C; box-shadow: 0 4px 0 #B37E20; }
-        .btn-zip:hover { background: #D6972B; }
 
-        /* Pagination Control */
         .pagination-container {
             display: none;
             justify-content: space-between;
@@ -261,11 +238,8 @@
             border-radius: var(--radius-md);
             font-family: 'Fredoka', cursive;
             cursor: pointer;
-            font-size: 0.85rem;
         }
         .page-btn:disabled { opacity: 0.4; cursor: not-allowed; }
-
-        .page-info { font-family: 'Fredoka', cursive; font-weight: 600; color: var(--brown-dark); font-size: 0.95rem; }
 
         .preview-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
         @media (max-width: 700px) { .preview-grid { grid-template-columns: 1fr; } }
@@ -301,12 +275,12 @@
 
         <div id="customDimensions" class="custom-dimensions form-row">
             <div class="form-group" style="margin-bottom:0;">
-                <label>Lebar Area Cetak (mm)</label>
-                <input type="number" id="customWidth" value="200" placeholder="Lebar mm">
+                <label>Lebar Area (mm)</label>
+                <input type="number" id="customWidth" value="200">
             </div>
             <div class="form-group" style="margin-bottom:0;">
-                <label>Tinggi Area Cetak (mm)</label>
-                <input type="number" id="customHeight" value="300" placeholder="Tinggi mm">
+                <label>Tinggi Area (mm)</label>
+                <input type="number" id="customHeight" value="300">
             </div>
         </div>
 
@@ -347,10 +321,10 @@
     <div class="card">
         <div class="card-title">👁️ Preview & Download</div>
 
-        <!-- Navigasi Lembar -->
+        <!-- Pagination -->
         <div id="pagination" class="pagination-container">
             <button id="prevPageBtn" class="page-btn" onclick="changePage(-1)">◀ Lembar Sebelum</button>
-            <span id="pageIndicator" class="page-info">Lembar 1 dari 1</span>
+            <span id="pageIndicator" style="font-family:'Fredoka'; font-weight:600;">Lembar 1 dari 1</span>
             <button id="nextPageBtn" class="page-btn" onclick="changePage(1)">Lembar Berikut ▶</button>
         </div>
 
@@ -368,7 +342,7 @@
                 <canvas id="printCanvas"></canvas>
             </div>
             <div class="preview-box">
-                <h4>Preview Line Cutting (Stroke Vector)</h4>
+                <h4>Preview Line Cutting (Vector Outline)</h4>
                 <canvas id="cutCanvas"></canvas>
             </div>
         </div>
@@ -379,58 +353,13 @@
     const DPI = 300; 
     const MM_TO_PX = (mm) => Math.round((mm * DPI) / 25.4);
     let uploadedStickers = [];
-    
-    // Multi-page stores
-    let pagesData = []; // Array simpan data tiap halaman { printCanvas, cutCanvas, svgContent }
+    let pagesData = []; 
     let currentPageIndex = 0;
     let currentSheetW_mm = 297, currentSheetH_mm = 420;
 
     function toggleCustomSize() {
         const select = document.getElementById('sheetSize');
-        const customDiv = document.getElementById('customDimensions');
-        customDiv.style.display = (select.value === 'custom') ? 'grid' : 'none';
-    }
-
-    function cropTransparentPixels(img) {
-        const tempC = document.createElement('canvas');
-        tempC.width = img.width;
-        tempC.height = img.height;
-        const ctx = tempC.getContext('2d');
-        ctx.drawImage(img, 0, 0);
-
-        const imgData = ctx.getImageData(0, 0, img.width, img.height);
-        const data = imgData.data;
-
-        let minX = img.width, minY = img.height, maxX = 0, maxY = 0;
-        let found = false;
-
-        for (let y = 0; y < img.height; y++) {
-            for (let x = 0; x < img.width; x++) {
-                const alpha = data[(y * img.width + x) * 4 + 3];
-                if (alpha > 10) {
-                    if (x < minX) minX = x;
-                    if (x > maxX) maxX = x;
-                    if (y < minY) minY = y;
-                    if (y > maxY) maxY = y;
-                    found = true;
-                }
-            }
-        }
-
-        if (!found) return img;
-
-        const cropW = maxX - minX + 1;
-        const cropH = maxY - minY + 1;
-
-        const croppedC = document.createElement('canvas');
-        croppedC.width = cropW;
-        croppedC.height = cropH;
-        const croppedCtx = croppedC.getContext('2d');
-        croppedCtx.drawImage(tempC, minX, minY, cropW, cropH, 0, 0, cropW, cropH);
-
-        const croppedImg = new Image();
-        croppedImg.src = croppedC.toDataURL();
-        return { img: croppedImg, width: cropW, height: cropH, originalCanvas: croppedC };
+        document.getElementById('customDimensions').style.display = (select.value === 'custom') ? 'grid' : 'none';
     }
 
     function handleFileSelect(e) {
@@ -438,21 +367,17 @@
         if (!files.length) return;
 
         files.forEach(file => {
-            const rawImg = new Image();
-            const objectUrl = URL.createObjectURL(file);
-            
-            rawImg.onload = function() {
-                const cropped = cropTransparentPixels(rawImg);
-                
-                cropped.img.onload = function() {
-                    const ratio = cropped.height / cropped.width;
+            const reader = new FileReader();
+            reader.onload = function(evt) {
+                const img = new Image();
+                img.onload = function() {
+                    const ratio = img.height / img.width;
                     const defaultWidth = 50;
                     const defaultHeight = Math.round(defaultWidth * ratio);
 
                     uploadedStickers.push({
                         id: Date.now() + Math.random(),
-                        img: cropped.img,
-                        canvas: cropped.originalCanvas,
+                        img: img,
                         filename: file.name,
                         widthMm: defaultWidth,
                         heightMm: defaultHeight,
@@ -462,17 +387,17 @@
 
                     renderStickerList();
                 };
+                img.src = evt.target.result;
             };
-            rawImg.src = objectUrl;
+            reader.readAsDataURL(file);
         });
-        
+
         e.target.value = '';
     }
 
     function renderStickerList() {
         const container = document.getElementById('stickerList');
-        const countSpan = document.getElementById('itemCount');
-        countSpan.innerText = `${uploadedStickers.length} item`;
+        document.getElementById('itemCount').innerText = `${uploadedStickers.length} item`;
 
         if (uploadedStickers.length === 0) {
             container.innerHTML = '<div class="empty-state">Belum ada gambar yang di-upload.</div>';
@@ -485,9 +410,7 @@
             div.className = 'sticker-item';
             div.innerHTML = `
                 <button class="btn-delete" title="Hapus" onclick="removeItem(${index})">×</button>
-                <div class="sticker-thumb-wrapper">
-                    <img src="${item.img.src}">
-                </div>
+                <img src="${item.img.src}" class="sticker-thumb">
                 <div class="sticker-details">
                     <div class="sticker-filename">${item.filename}</div>
                     <div class="sticker-inputs">
@@ -524,4 +447,86 @@
         }
 
         const items = document.querySelectorAll('.sticker-item');
-        if (items[index
+        if (items[index]) {
+            const inputs = items[index].querySelectorAll('.sticker-inputs input');
+            inputs[0].value = item.widthMm;
+            inputs[1].value = item.heightMm;
+        }
+    }
+
+    function updateQty(index, val) {
+        uploadedStickers[index].qty = Math.max(1, parseInt(val) || 1);
+    }
+
+    function removeItem(index) {
+        uploadedStickers.splice(index, 1);
+        renderStickerList();
+    }
+
+    function drawStrokeOnly(cCtx, img, x, y, w, h) {
+        const tempC = document.createElement('canvas');
+        tempC.width = w; tempC.height = h;
+        const tempCtx = tempC.getContext('2d');
+        tempCtx.drawImage(img, 0, 0, w, h);
+
+        const imgData = tempCtx.getImageData(0, 0, w, h);
+        const d = imgData.data;
+
+        const outlineC = document.createElement('canvas');
+        outlineC.width = w; outlineC.height = h;
+        const oCtx = outlineC.getContext('2d');
+        const oData = oCtx.createImageData(w, h);
+        const od = oData.data;
+
+        for (let py = 0; py < h; py++) {
+            for (let px = 0; px < w; px++) {
+                const idx = (py * w + px) * 4;
+                if (d[idx + 3] > 20) {
+                    let isEdge = false;
+                    if (px === 0 || px === w - 1 || py === 0 || py === h - 1) {
+                        isEdge = true;
+                    } else {
+                        const topA = d[((py - 1) * w + px) * 4 + 3];
+                        const botA = d[((py + 1) * w + px) * 4 + 3];
+                        const leftA = d[(py * w + (px - 1)) * 4 + 3];
+                        const rightA = d[(py * w + (px + 1)) * 4 + 3];
+                        if (topA <= 20 || botA <= 20 || leftA <= 20 || rightA <= 20) isEdge = true;
+                    }
+
+                    if (isEdge) {
+                        od[idx] = 230;     
+                        od[idx + 1] = 50;  
+                        od[idx + 2] = 50;  
+                        od[idx + 3] = 255; 
+                    }
+                }
+            }
+        }
+        oCtx.putImageData(oData, 0, 0);
+        cCtx.drawImage(outlineC, x, y);
+    }
+
+    function getContourSVGPath(img, targetW_mm, targetH_mm, offsetX_mm, offsetY_mm) {
+        const tempC = document.createElement('canvas');
+        tempC.width = 150; 
+        tempC.height = Math.round(150 * (img.height / img.width));
+        const ctx = tempC.getContext('2d');
+        ctx.drawImage(img, 0, 0, tempC.width, tempC.height);
+
+        const w = tempC.width;
+        const h = tempC.height;
+        const imgData = ctx.getImageData(0, 0, w, h).data;
+
+        let points = [];
+        for (let y = 0; y < h; y++) {
+            for (let x = 0; x < w; x++) {
+                const alpha = imgData[(y * w + x) * 4 + 3];
+                if (alpha > 20) {
+                    let isEdge = false;
+                    if (x === 0 || x === w - 1 || y === 0 || y === h - 1) {
+                        isEdge = true;
+                    } else {
+                        const aTop = imgData[((y - 1) * w + x) * 4 + 3];
+                        const aBot = imgData[((y + 1) * w + x) * 4 + 3];
+                        const aLeft = imgData[(y * w + (x - 1)) * 4 + 3];
+                      
