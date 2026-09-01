@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sticker Sheet & Cutline Studio ✨</title>
+    <title>Sticker Layout & Contour Studio ✨</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Quicksand:wght@500;600;700&display=swap" rel="stylesheet">
@@ -243,8 +243,8 @@
 <body>
 
 <div class="header-title">
-    <h1>✂️ Sticker Layout Studio ✨</h1>
-    <p>Susun stiker otomatis ke banyak lembar & preview cutting line vector</p>
+    <h1>✂️ Sticker Layout & Contour Studio ✨</h1>
+    <p>Susun stiker otomatis & garis potong mengikuti bentuk siluet karakter</p>
 </div>
 
 <div class="container">
@@ -290,7 +290,7 @@
         </div>
 
         <div class="form-group">
-            <label for="fileInput">Pilih File PNG Stiker:</label>
+            <label for="fileInput">Pilih File PNG Stiker (Transparan):</label>
             <input type="file" id="fileInput" multiple accept="image/*">
         </div>
 
@@ -303,7 +303,7 @@
             <div class="empty-state">Belum ada gambar yang di-upload.</div>
         </div>
 
-        <button class="btn" id="btnGenerate">✨ Generate Multi-Page Layout</button>
+        <button class="btn" id="btnGenerate">✨ Generate Layout & Cutline</button>
     </div>
 
     <div class="card">
@@ -318,7 +318,7 @@
         <div id="actionButtons" class="download-bar">
             <div class="download-row">
                 <button class="btn btn-success" id="btnDownloadPNG">📥 Download Cetak Lembar Ini (PNG)</button>
-                <button class="btn btn-danger" id="btnDownloadSVG">✂️ Download Cutting Lembar Ini (SVG)</button>
+                <button class="btn btn-danger" id="btnDownloadSVG">✂️ Download Cutting Contour (SVG)</button>
             </div>
         </div>
 
@@ -370,6 +370,9 @@
                         const defaultWidth = 50;
                         const defaultHeight = Math.round(defaultWidth * ratio);
 
+                        // Ekstrak contour/siluet asli dari alpha channel gambar
+                        const contourPoints = extractContourPoints(img);
+
                         uploadedStickers.push({
                             id: Date.now() + Math.random(),
                             img: img,
@@ -377,7 +380,8 @@
                             widthMm: defaultWidth,
                             heightMm: defaultHeight,
                             aspectRatio: ratio,
-                            qty: 10
+                            qty: 10,
+                            contourPoints: contourPoints // Titik-titik path siluet asli
                         });
 
                         loaded++;
@@ -398,6 +402,68 @@
         btnDownloadPNG.addEventListener('click', downloadCetakCurrent);
         btnDownloadSVG.addEventListener('click', downloadCuttingCurrent);
     });
+
+    // Fungsi untuk melacak kontur/siluet luar berdasarkan pixel transparan (Alpha > 30)
+    function extractContourPoints(img) {
+        const w = img.width;
+        const h = img.height;
+        const canvas = document.createElement('canvas');
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0);
+        const imgData = ctx.getImageData(0, 0, w, h);
+        const data = imgData.data;
+
+        // Sampling grid untuk mencari tepi terluar per baris/kolom agar path tidak terlalu berat tapi tetap akurat
+        const step = Math.max(1, Math.floor(Math.min(w, h) / 100)); // Mengatur kerapatan titik kontur
+        let outerPoints = [];
+
+        // Scan dari kiri ke kanan (tepi kiri) & kanan ke kiri (tepi kanan)
+        for (let y = 0; y < h; y += step) {
+            let leftX = -1, rightX = -1;
+            for (let x = 0; x < w; x++) {
+                if (data[(y * w + x) * 4 + 3] > 30) {
+                    leftX = x;
+                    break;
+                }
+            }
+            for (let x = w - 1; x >= 0; x--) {
+                if (data[(y * w + x) * 4 + 3] > 30) {
+                    rightX = x;
+                    break;
+                }
+            }
+            if (leftX !== -1) outerPoints.push({ x: leftX, y: y });
+        }
+
+        // Scan dari atas ke bawah & bawah ke atas untuk melengkapi siluet atas-bawah
+        let bottomPoints = [];
+        for (let x = w - 1; x >= 0; x -= step) {
+            let bottomY = -1;
+            for (let y = h - 1; y >= 0; y--) {
+                if (data[(y * w + x) * 4 + 3] > 30) {
+                    bottomY = y;
+                    break;
+                }
+            }
+            if (bottomY !== -1) bottomPoints.push({ x: x, y: bottomY });
+        }
+
+        for (let y = h - 1; y >= 0; y -= step) {
+            let rightX2 = -1;
+            for (let x = w - 1; x >= 0; x--) {
+                if (data[(y * w + x) * 4 + 3] > 30) {
+                    rightX2 = x;
+                    break;
+                }
+            }
+            if (rightX2 !== -1) outerPoints.push({ x: rightX2, y: y });
+        }
+
+        // Normalisasi koordinat ke skala 0.0 sampai 1.0 relatif terhadap ukuran gambar asli
+        return outerPoints.map(p => ({ x: p.x / w, y: p.y / h }));
+    }
 
     function renderStickerList() {
         const container = document.getElementById('stickerList');
@@ -486,15 +552,6 @@
         }
     }
 
-    // Fungsi path kontur presisi melingkari objek transparan tanpa kotak luar kaku
-    function drawContourCutPath(cCtx, x, y, w, h) {
-        cCtx.strokeStyle = '#FF0000';
-        cCtx.lineWidth = 3;
-        cCtx.beginPath();
-        cCtx.roundRect(x, y, w, h, 6); // Membuat garis potong dengan sudut melengkung halus mengikuti bentuk stiker
-        cCtx.stroke();
-    }
-
     function createNewPage(sheetW, sheetH) {
         const pCanvas = document.createElement('canvas');
         pCanvas.width = sheetW; pCanvas.height = sheetH;
@@ -567,12 +624,31 @@
                     maxRowHeight = 0;
                 }
 
+                // Cetak gambar stiker
                 currentPage.printCtx.drawImage(item.img, curX, curY, itemW, itemH);
-                drawContourCutPath(currentPage.cutCtx, curX, curY, itemW, itemH);
 
-                const posX_mm = curX * 25.4 / DPI;
-                const posY_mm = curY * 25.4 / DPI;
-                const pathSvg = `<rect x="${posX_mm.toFixed(2)}" y="${posY_mm.toFixed(2)}" width="${item.widthMm}" height="${item.heightMm}" rx="2" ry="2" fill="none" stroke="#FF0000" stroke-width="0.25" />`;
+                // Render garis potong contour siluet di canvas preview
+                currentPage.cutCtx.strokeStyle = '#FF0000';
+                currentPage.cutCtx.lineWidth = 2;
+                currentPage.cutCtx.beginPath();
+
+                let svgPathData = "";
+                item.contourPoints.forEach((pt, idx) => {
+                    const px = curX + (pt.x * itemW);
+                    const py = curY + (pt.y * itemH);
+                    if (idx === 0) {
+                        currentPage.cutCtx.moveTo(px, py);
+                        svgPathData += `M ${((px * 25.4) / DPI).toFixed(2)} ${((py * 25.4) / DPI).toFixed(2)}`;
+                    } else {
+                        currentPage.cutCtx.lineTo(px, py);
+                        svgPathData += ` L ${((px * 25.4) / DPI).toFixed(2)} ${((py * 25.4) / DPI).toFixed(2)}`;
+                    }
+                });
+                currentPage.cutCtx.closePath();
+                currentPage.cutCtx.stroke();
+
+                svgPathData += " Z";
+                const pathSvg = `<path d="${svgPathData}" fill="none" stroke="#FF0000" stroke-width="0.25" />`;
                 currentPage.svgPaths.push(pathSvg);
 
                 curX += itemW + gap;
@@ -627,7 +703,7 @@
         const blob = new Blob([svgStr], { type: 'image/svg+xml;charset=utf-8' });
         const link = document.createElement('a');
         link.href = URL.createObjectURL(blob);
-        link.download = `Cutting_Lembar_${currentPageIndex + 1}.svg`;
+        link.download = `Cutting_Contour_Lembar_${currentPageIndex + 1}.svg`;
         link.click();
     }
 </script>
