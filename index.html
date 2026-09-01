@@ -244,7 +244,7 @@
 
 <div class="header-title">
     <h1>✂️ Sticker Layout & Contour Studio ✨</h1>
-    <p>Susun stiker otomatis & garis potong mengikuti bentuk siluet karakter</p>
+    <p>Auto-Trim Transparan & Garis Potong Presisi Sesuai Siluet Karakter</p>
 </div>
 
 <div class="container">
@@ -366,22 +366,22 @@
                 reader.onload = function(evt) {
                     const img = new Image();
                     img.onload = function() {
-                        const ratio = img.height / img.width;
-                        const defaultWidth = 50;
+                        // 1. AUTO-TRIM: Otomatis buang area transparan luar, ambil batas objek sesungguhnya
+                        const trimmedData = autoTrimImage(img);
+                        
+                        const ratio = trimmedData.height / trimmedData.width;
+                        const defaultWidth = 50; // Default 50mm berdasarkan objek terpangkas
                         const defaultHeight = Math.round(defaultWidth * ratio);
-
-                        // Ekstrak contour/siluet asli dari alpha channel gambar
-                        const contourPoints = extractContourPoints(img);
 
                         uploadedStickers.push({
                             id: Date.now() + Math.random(),
-                            img: img,
+                            trimmedCanvas: trimmedData.canvas, // Canvas objek yang sudah dipangkas bersih
                             filename: file.name,
                             widthMm: defaultWidth,
                             heightMm: defaultHeight,
                             aspectRatio: ratio,
                             qty: 10,
-                            contourPoints: contourPoints // Titik-titik path siluet asli
+                            contourPoints: trimmedData.contourPoints // Titik kontur relatif dari area yang sudah bersih
                         });
 
                         loaded++;
@@ -403,66 +403,87 @@
         btnDownloadSVG.addEventListener('click', downloadCuttingCurrent);
     });
 
-    // Fungsi untuk melacak kontur/siluet luar berdasarkan pixel transparan (Alpha > 30)
-    function extractContourPoints(img) {
-        const w = img.width;
-        const h = img.height;
-        const canvas = document.createElement('canvas');
-        canvas.width = w;
-        canvas.height = h;
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(img, 0, 0);
-        const imgData = ctx.getImageData(0, 0, w, h);
+    // Fungsi otomatis mendeteksi batas pixel tidak transparan (membuang ruang kosong/padding transparan luar)
+    function autoTrimImage(img) {
+        const tempCanvas = document.createElement('canvas');
+        tempCanvas.width = img.width;
+        tempCanvas.height = img.height;
+        const tCtx = tempCanvas.getContext('2d');
+        tCtx.drawImage(img, 0, 0);
+        const imgData = tCtx.getImageData(0, 0, img.width, img.height);
         const data = imgData.data;
 
-        // Sampling grid untuk mencari tepi terluar per baris/kolom agar path tidak terlalu berat tapi tetap akurat
-        const step = Math.max(1, Math.floor(Math.min(w, h) / 100)); // Mengatur kerapatan titik kontur
-        let outerPoints = [];
+        let minX = img.width, minY = img.height, maxX = 0, maxY = 0;
 
-        // Scan dari kiri ke kanan (tepi kiri) & kanan ke kiri (tepi kanan)
-        for (let y = 0; y < h; y += step) {
-            let leftX = -1, rightX = -1;
-            for (let x = 0; x < w; x++) {
-                if (data[(y * w + x) * 4 + 3] > 30) {
-                    leftX = x;
-                    break;
+        // Cari batas kotak objek terluar yang memiliki alpha > 30
+        for (let y = 0; y < img.height; y++) {
+            for (let x = 0; x < img.width; x++) {
+                const alpha = data[(y * img.width + x) * 4 + 3];
+                if (alpha > 30) {
+                    if (x < minX) minX = x;
+                    if (x > maxX) maxX = x;
+                    if (y < minY) minY = y;
+                    if (y > maxY) maxY = y;
                 }
             }
-            for (let x = w - 1; x >= 0; x--) {
-                if (data[(y * w + x) * 4 + 3] > 30) {
-                    rightX = x;
-                    break;
-                }
+        }
+
+        // Jika gambar sepenuhnya transparan
+        if (minX > maxX || minY > maxY) {
+            minX = 0; minY = 0; maxX = img.width; maxY = img.height;
+        }
+
+        const cropWidth = maxX - minX + 1;
+        const cropHeight = maxY - minY + 1;
+
+        // Buat canvas baru khusus area objek yang sudah dipangkas (trimmed)
+        const finalCanvas = document.createElement('canvas');
+        finalCanvas.width = cropWidth;
+        finalCanvas.height = cropHeight;
+        const fCtx = finalCanvas.getContext('2d');
+        fCtx.drawImage(tempCanvas, minX, minY, cropWidth, cropHeight, 0, 0, cropWidth, cropHeight);
+
+        // Ekstrak titik kontur siluet tepat dari canvas yang sudah dipangkas
+        const trimmedData = fCtx.getImageData(0, 0, cropWidth, cropHeight);
+        const tPixels = trimmedData.data;
+        const step = Math.max(1, Math.floor(Math.min(cropWidth, cropHeight) / 100));
+        let outerPoints = [];
+
+        for (let y = 0; y < cropHeight; y += step) {
+            let leftX = -1, rightX = -1;
+            for (let x = 0; x < cropWidth; x++) {
+                if (tPixels[(y * cropWidth + x) * 4 + 3] > 30) { leftX = x; break; }
+            }
+            for (let x = cropWidth - 1; x >= 0; x--) {
+                if (tPixels[(y * cropWidth + x) * 4 + 3] > 30) { rightX = x; break; }
             }
             if (leftX !== -1) outerPoints.push({ x: leftX, y: y });
         }
 
-        // Scan dari atas ke bawah & bawah ke atas untuk melengkapi siluet atas-bawah
-        let bottomPoints = [];
-        for (let x = w - 1; x >= 0; x -= step) {
+        for (let x = cropWidth - 1; x >= 0; x -= step) {
             let bottomY = -1;
-            for (let y = h - 1; y >= 0; y--) {
-                if (data[(y * w + x) * 4 + 3] > 30) {
-                    bottomY = y;
-                    break;
-                }
+            for (let y = cropHeight - 1; y >= 0; y--) {
+                if (tPixels[(y * cropWidth + x) * 4 + 3] > 30) { bottomY = y; break; }
             }
-            if (bottomY !== -1) bottomPoints.push({ x: x, y: bottomY });
+            if (bottomY !== -1) outerPoints.push({ x: x, y: bottomY });
         }
 
-        for (let y = h - 1; y >= 0; y -= step) {
+        for (let y = cropHeight - 1; y >= 0; y -= step) {
             let rightX2 = -1;
-            for (let x = w - 1; x >= 0; x--) {
-                if (data[(y * w + x) * 4 + 3] > 30) {
-                    rightX2 = x;
-                    break;
-                }
+            for (let x = cropWidth - 1; x >= 0; x--) {
+                if (tPixels[(y * cropWidth + x) * 4 + 3] > 30) { rightX2 = x; break; }
             }
             if (rightX2 !== -1) outerPoints.push({ x: rightX2, y: y });
         }
 
-        // Normalisasi koordinat ke skala 0.0 sampai 1.0 relatif terhadap ukuran gambar asli
-        return outerPoints.map(p => ({ x: p.x / w, y: p.y / h }));
+        const contourPoints = outerPoints.map(p => ({ x: p.x / cropWidth, y: p.y / cropHeight }));
+
+        return {
+            canvas: finalCanvas,
+            width: cropWidth,
+            height: cropHeight,
+            contourPoints: contourPoints
+        };
     }
 
     function renderStickerList() {
@@ -480,7 +501,7 @@
             div.className = 'sticker-item';
             div.innerHTML = `
                 <button class="btn-delete" title="Hapus" data-index="${index}">×</button>
-                <img src="${item.img.src}" class="sticker-thumb">
+                <img src="${item.trimmedCanvas.toDataURL()}" class="sticker-thumb">
                 <div class="sticker-details">
                     <div class="sticker-filename">${item.filename}</div>
                     <div class="sticker-inputs">
@@ -624,10 +645,10 @@
                     maxRowHeight = 0;
                 }
 
-                // Cetak gambar stiker
-                currentPage.printCtx.drawImage(item.img, curX, curY, itemW, itemH);
+                // Cetak gambar stiker yang sudah bersih dari padding transparan
+                currentPage.printCtx.drawImage(item.trimmedCanvas, curX, curY, itemW, itemH);
 
-                // Render garis potong contour siluet di canvas preview
+                // Render garis potong contour siluet
                 currentPage.cutCtx.strokeStyle = '#FF0000';
                 currentPage.cutCtx.lineWidth = 2;
                 currentPage.cutCtx.beginPath();
