@@ -440,52 +440,57 @@
 
         const trimmedData = fCtx.getImageData(0, 0, cropWidth, cropHeight);
         const tPixels = trimmedData.data;
-        const step = Math.max(1, Math.floor(Math.min(cropWidth, cropHeight) / 100));
+
+        let cxSum = 0, cySum = 0, count = 0;
+        for (let y = 0; y < cropHeight; y++) {
+            for (let x = 0; x < cropWidth; x++) {
+                if (tPixels[(y * cropWidth + x) * 4 + 3] > 30) {
+                    cxSum += x;
+                    cySum += y;
+                    count++;
+                }
+            }
+        }
+        let cx = cxSum / count;
+        let cy = cySum / count;
+
+        const totalSectors = 360; 
         let outerPoints = [];
 
-        for (let y = 0; y < cropHeight; y += step) {
-            let leftX = -1, rightX = -1;
-            for (let x = 0; x < cropWidth; x++) {
-                if (tPixels[(y * cropWidth + x) * 4 + 3] > 30) { leftX = x; break; }
+        for (let angleDeg = 0; angleDeg < totalSectors; angleDeg += 1) {
+            let rad = (angleDeg * Math.PI) / 180;
+            let foundX = -1, foundY = -1;
+
+            for (let r = 5; r < Math.max(cropWidth, cropHeight); r += 1) {
+                let checkX = Math.round(cx + r * Math.cos(rad));
+                let checkY = Math.round(cy + r * Math.sin(rad));
+
+                if (checkX < 0 || checkX >= cropWidth || checkY < 0 || checkY >= cropHeight) break;
+
+                let alpha = tPixels[(checkY * cropWidth + checkX) * 4 + 3];
+                if (alpha <= 30) {
+                    foundX = Math.round(cx + (r - 1) * Math.cos(rad));
+                    foundY = Math.round(cy + (r - 1) * Math.sin(rad));
+                    break;
+                }
             }
-            for (let x = cropWidth - 1; x >= 0; x--) {
-                if (tPixels[(y * cropWidth + x) * 4 + 3] > 30) { rightX = x; break; }
+
+            if (foundX !== -1 && foundY !== -1) {
+                outerPoints.push({ x: foundX, y: foundY });
             }
-            if (leftX !== -1) outerPoints.push({ x: leftX, y: y });
         }
-
-        for (let x = cropWidth - 1; x >= 0; x -= step) {
-            let bottomY = -1;
-            for (let y = cropHeight - 1; y >= 0; y--) {
-                if (tPixels[(y * cropWidth + x) * 4 + 3] > 30) { bottomY = y; break; }
-            }
-            if (bottomY !== -1) outerPoints.push({ x: x, y: bottomY });
-        }
-
-        for (let y = cropHeight - 1; y >= 0; y -= step) {
-            let rightX2 = -1;
-            for (let x = cropWidth - 1; x >= 0; x--) {
-                if (tPixels[(y * cropWidth + x) * 4 + 3] > 30) { rightX2 = x; break; }
-            }
-            if (rightX2 !== -1) outerPoints.push({ x: rightX2, y: y });
-        }
-
-        // Urutkan berdasarkan sudut (angle) dari titik pusat (centroid) agar tidak saling menyilang
-        let cx = 0, cy = 0;
-        outerPoints.forEach(p => { cx += p.x; cy += p.y; });
-        cx /= outerPoints.length;
-        cy /= outerPoints.length;
-
-        outerPoints.sort((a, b) => {
-            let angleA = Math.atan2(a.y - cy, a.x - cx);
-            let angleB = Math.atan2(b.y - cy, b.x - cx);
-            return angleA - angleB;
-        });
 
         let contourPoints = [];
         for (let i = 0; i < outerPoints.length; i++) {
-            if (i === 0 || Math.hypot(outerPoints[i].x - contourPoints[contourPoints.length - 1].x, outerPoints[i].y - contourPoints[contourPoints.length - 1].y) > 3) {
-                contourPoints.push({ x: outerPoints[i].x / cropWidth, y: outerPoints[i].y / cropHeight });
+            let pt = outerPoints[i];
+            if (contourPoints.length === 0) {
+                contourPoints.push({ x: pt.x / cropWidth, y: pt.y / cropHeight });
+            } else {
+                let lastPt = contourPoints[contourPoints.length - 1];
+                let dist = Math.hypot((pt.x / cropWidth) - lastPt.x, (pt.y / cropHeight) - lastPt.y);
+                if (dist > 0.005) {
+                    contourPoints.push({ x: pt.x / cropWidth, y: pt.y / cropHeight });
+                }
             }
         }
 
@@ -523,219 +528,4 @@
                         <div>
                             <label>T (mm)</label>
                             <input type="number" class="input-h" value="${item.heightMm}" data-index="${index}">
-                        </div>
-                        <div>
-                            <label>Qty</label>
-                            <input type="number" class="input-q" value="${item.qty}" min="1" data-index="${index}">
-                        </div>
-                    </div>
-                </div>
-            `;
-            container.appendChild(div);
-        });
-
-        container.querySelectorAll('.btn-delete').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                const idx = parseInt(e.target.getAttribute('data-index'));
-                uploadedStickers.splice(idx, 1);
-                renderStickerList();
-            });
-        });
-
-        container.querySelectorAll('.input-w').forEach(inp => {
-            inp.addEventListener('input', (e) => {
-                const idx = parseInt(e.target.getAttribute('data-index'));
-                updateItemSize(idx, 'width', e.target.value);
-            });
-        });
-
-        container.querySelectorAll('.input-h').forEach(inp => {
-            inp.addEventListener('input', (e) => {
-                const idx = parseInt(e.target.getAttribute('data-index'));
-                updateItemSize(idx, 'height', e.target.value);
-            });
-        });
-
-        container.querySelectorAll('.input-q').forEach(inp => {
-            inp.addEventListener('change', (e) => {
-                const idx = parseInt(e.target.getAttribute('data-index'));
-                uploadedStickers[idx].qty = Math.max(1, parseInt(e.target.value) || 1);
-            });
-        });
-    }
-
-    function updateItemSize(index, changedProp, val) {
-        const numVal = parseFloat(val);
-        if (isNaN(numVal) || numVal <= 0) return;
-
-        const item = uploadedStickers[index];
-        if (changedProp === 'width') {
-            item.widthMm = numVal;
-            item.heightMm = Math.round(numVal * item.aspectRatio);
-        } else if (changedProp === 'height') {
-            item.heightMm = numVal;
-            item.widthMm = Math.round(numVal / item.aspectRatio);
-        }
-
-        const items = document.querySelectorAll('.sticker-item');
-        if (items[index]) {
-            items[index].querySelector('.input-w').value = item.widthMm;
-            items[index].querySelector('.input-h').value = item.heightMm;
-        }
-    }
-
-    function createNewPage(sheetW, sheetH) {
-        const pCanvas = document.createElement('canvas');
-        pCanvas.width = sheetW; pCanvas.height = sheetH;
-        const pCtx = pCanvas.getContext('2d');
-        pCtx.fillStyle = '#FFFFFF'; pCtx.fillRect(0, 0, sheetW, sheetH);
-
-        const cCanvas = document.createElement('canvas');
-        cCanvas.width = sheetW; cCanvas.height = sheetH;
-        const cCtx = cCanvas.getContext('2d');
-        cCtx.fillStyle = '#FFFFFF'; cCtx.fillRect(0, 0, sheetW, sheetH);
-
-        return {
-            printCanvas: pCanvas,
-            printCtx: pCtx,
-            cutCanvas: cCanvas,
-            cutCtx: cCtx,
-            svgPaths: []
-        };
-    }
-
-    function generateLayout() {
-        if (uploadedStickers.length === 0) {
-            alert("Upload minimal 1 gambar stiker dulu ya!");
-            return;
-        }
-
-        const sizeOption = document.getElementById('sheetSize').value;
-        const marginMm = parseFloat(document.getElementById('sheetMargin').value) || 0;
-        const gapMm = parseFloat(document.getElementById('stickerGap').value) || 0;
-
-        if (sizeOption === 'A4') { currentSheetW_mm = 210; currentSheetH_mm = 297; }
-        else if (sizeOption === 'A4_Vendor') { currentSheetW_mm = 190; currentSheetH_mm = 277; }
-        else if (sizeOption === 'A3') { currentSheetW_mm = 297; currentSheetH_mm = 420; }
-        else if (sizeOption === 'A3Plus') { currentSheetW_mm = 329; currentSheetH_mm = 483; }
-        else if (sizeOption === 'A3Plus_Vendor') { currentSheetW_mm = 300; currentSheetH_mm = 450; }
-        else if (sizeOption === 'custom') {
-            currentSheetW_mm = parseFloat(document.getElementById('customWidth').value) || 200;
-            currentSheetH_mm = parseFloat(document.getElementById('customHeight').value) || 300;
-        }
-
-        const sheetW = MM_TO_PX(currentSheetW_mm);
-        const sheetH = MM_TO_PX(currentSheetH_mm);
-        const margin = MM_TO_PX(marginMm);
-        const gap = MM_TO_PX(gapMm);
-
-        pagesData = [];
-        let currentPage = createNewPage(sheetW, sheetH);
-        pagesData.push(currentPage);
-
-        let curX = margin;
-        let curY = margin;
-        let maxRowHeight = 0;
-
-        uploadedStickers.forEach(item => {
-            const itemW = MM_TO_PX(item.widthMm);
-            const itemH = MM_TO_PX(item.heightMm);
-
-            for (let i = 0; i < item.qty; i++) {
-                if (curX + itemW > sheetW - margin) {
-                    curX = margin;
-                    curY += maxRowHeight + gap;
-                    maxRowHeight = 0;
-                }
-
-                if (curY + itemH > sheetH - margin) {
-                    currentPage = createNewPage(sheetW, sheetH);
-                    pagesData.push(currentPage);
-                    curX = margin;
-                    curY = margin;
-                    maxRowHeight = 0;
-                }
-
-                currentPage.printCtx.drawImage(item.trimmedCanvas, curX, curY, itemW, itemH);
-
-                currentPage.cutCtx.strokeStyle = '#FF0000';
-                currentPage.cutCtx.lineWidth = 2;
-                currentPage.cutCtx.beginPath();
-
-                let svgPathData = "";
-                item.contourPoints.forEach((pt, idx) => {
-                    const px = curX + (pt.x * itemW);
-                    const py = curY + (pt.y * itemH);
-                    if (idx === 0) {
-                        currentPage.cutCtx.moveTo(px, py);
-                        svgPathData += `M ${((px * 25.4) / DPI).toFixed(2)} ${((py * 25.4) / DPI).toFixed(2)}`;
-                    } else {
-                        currentPage.cutCtx.lineTo(px, py);
-                        svgPathData += ` L ${((px * 25.4) / DPI).toFixed(2)} ${((py * 25.4) / DPI).toFixed(2)}`;
-                    }
-                });
-                currentPage.cutCtx.closePath();
-                currentPage.cutCtx.stroke();
-
-                svgPathData += " Z";
-                const pathSvg = `<path d="${svgPathData}" fill="none" stroke="#FF0000" stroke-width="0.25" />`;
-                currentPage.svgPaths.push(pathSvg);
-
-                curX += itemW + gap;
-                if (itemH > maxRowHeight) maxRowHeight = itemH;
-            }
-        });
-
-        currentPageIndex = 0;
-        renderCurrentPage();
-
-        document.getElementById('pagination').style.display = 'flex';
-        document.getElementById('actionButtons').style.display = 'flex';
-    }
-
-    function renderCurrentPage() {
-        const pCanvas = document.getElementById('printCanvas');
-        const cCanvas = document.getElementById('cutCanvas');
-        const pageData = pagesData[currentPageIndex];
-
-        pCanvas.width = pageData.printCanvas.width;
-        pCanvas.height = pageData.printCanvas.height;
-        pCanvas.getContext('2d').drawImage(pageData.printCanvas, 0, 0);
-
-        cCanvas.width = pageData.cutCanvas.width;
-        cCanvas.height = pageData.cutCanvas.height;
-        cCanvas.getContext('2d').drawImage(pageData.cutCanvas, 0, 0);
-
-        document.getElementById('pageIndicator').innerText = `Lembar ${currentPageIndex + 1} dari ${pagesData.length}`;
-        document.getElementById('prevPageBtn').disabled = (currentPageIndex === 0);
-        document.getElementById('nextPageBtn').disabled = (currentPageIndex === pagesData.length - 1);
-    }
-
-    function changePage(delta) {
-        currentPageIndex += delta;
-        renderCurrentPage();
-    }
-
-    function downloadCetakCurrent() {
-        const link = document.createElement('a');
-        link.download = `Cetak_Lembar_${currentPageIndex + 1}.png`;
-        link.href = document.getElementById('printCanvas').toDataURL('image/png');
-        link.click();
-    }
-
-    function downloadCuttingCurrent() {
-        const svgStr = `<?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<svg xmlns="http://www.w3.org/2000/svg" width="${currentSheetW_mm}mm" height="${currentSheetH_mm}mm" viewBox="0 0 ${currentSheetW_mm} ${currentSheetH_mm}">
-    <g id="CutlineLayer">
-        ${pagesData[currentPageIndex].svgPaths.join('\n        ')}
-    </g>
-</svg>`;
-        const blob = new Blob([svgStr], { type: 'image/svg+xml;charset=utf-8' });
-        const link = document.createElement('a');
-        link.href = URL.createObjectURL(blob);
-        link.download = `Cutting_Contour_Lembar_${currentPageIndex + 1}.svg`;
-        link.click();
-    }
-</script>
-</body>
-</html>
+                    
