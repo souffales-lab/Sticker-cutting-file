@@ -15,7 +15,6 @@
             --card-cream: #FFFDF0;
             --card-bg: #FFFFFF;
             --accent-yellow: #FDE8AF;
-            --accent-yellow-hover: #FCD982;
             --brown-text: #785A46;
             --brown-dark: #5C4333;
             --brown-btn: #A0785C;
@@ -23,7 +22,6 @@
             --border-dashed: #E2CFB4;
             --border-solid: #EFE4D3;
             --danger: #E57373;
-            --success: #81C784;
             --radius-xl: 24px;
             --radius-lg: 18px;
             --radius-md: 12px;
@@ -135,14 +133,7 @@
             border-radius: var(--radius-md);
         }
 
-        .upload-btn-wrapper {
-            position: relative;
-            overflow: hidden;
-            display: block;
-            width: 100%;
-        }
-
-        .btn-upload {
+        .upload-btn-label {
             border: 2px dashed var(--border-dashed);
             color: var(--brown-dark);
             background-color: var(--card-cream);
@@ -157,18 +148,9 @@
             transition: all 0.2s ease;
         }
 
-        .btn-upload:hover { background-color: var(--accent-yellow); }
+        .upload-btn-label:hover { background-color: var(--accent-yellow); }
 
-        .upload-btn-wrapper input[type=file] {
-            font-size: 100px;
-            position: absolute;
-            left: 0;
-            top: 0;
-            opacity: 0;
-            cursor: pointer;
-            height: 100%;
-            width: 100%;
-        }
+        #fileInput { display: none; }
 
         .sticker-list {
             display: flex;
@@ -269,7 +251,7 @@
 
 <div class="header-title">
     <h1>✂️ Sticker Layout Studio ✨</h1>
-    <p>Susun stiker otomatis ke sheet standar/custom dengan auto-bleed & ekspor vector SVG cutting line</p>
+    <p>Susun stiker otomatis ke sheet standar/custom & ekspor vector SVG cutting line</p>
 </div>
 
 <div class="container">
@@ -279,8 +261,9 @@
         <div class="form-group">
             <label>Ukuran Kertas / Area Cetak</label>
             <select id="sheetSize" onchange="toggleCustomSize()">
-                <option value="A4">A4 (210 x 297 mm)</option>
-                <option value="A3" selected>A3 (297 x 420 mm)</option>
+                <option value="A4">A4 Standard (210 x 297 mm)</option>
+                <option value="A4_Vendor">A4 Area Cetak Vendor (190 x 277 mm)</option>
+                <option value="A3" selected>A3 Standard (297 x 420 mm)</option>
                 <option value="A3Plus">A3+ Standard (329 x 483 mm)</option>
                 <option value="A3Plus_Vendor">A3+ Area Cetak Vendor (300 x 450 mm)</option>
                 <option value="custom">✨ Custom Size (Input Sendiri)</option>
@@ -289,12 +272,12 @@
 
         <div id="customDimensions" class="custom-dimensions form-row">
             <div class="form-group" style="margin-bottom:0;">
-                <label>Lebar (mm)</label>
-                <input type="number" id="customWidth" value="310" placeholder="Lebar mm">
+                <label>Lebar Area Cetak (mm)</label>
+                <input type="number" id="customWidth" value="200" placeholder="Lebar mm">
             </div>
             <div class="form-group" style="margin-bottom:0;">
-                <label>Tinggi (mm)</label>
-                <input type="number" id="customHeight" value="460" placeholder="Tinggi mm">
+                <label>Tinggi Area Cetak (mm)</label>
+                <input type="number" id="customHeight" value="300" placeholder="Tinggi mm">
             </div>
         </div>
 
@@ -304,15 +287,8 @@
                 <input type="number" id="sheetMargin" value="10">
             </div>
             <div class="form-group">
-                <label>Jarak (mm)</label>
+                <label>Jarak Stiker (mm)</label>
                 <input type="number" id="stickerGap" value="3">
-            </div>
-        </div>
-
-        <div class="form-row">
-            <div class="form-group">
-                <label>Bleed Stiker (mm)</label>
-                <input type="number" id="bleedAmount" value="2" min="0" max="5">
             </div>
         </div>
 
@@ -321,10 +297,8 @@
         </div>
 
         <div class="form-group">
-            <div class="upload-btn-wrapper">
-                <button class="btn-upload">📁 Pilih Beberapa File Gambar (PNG)</button>
-                <input type="file" id="fileInput" multiple accept="image/*">
-            </div>
+            <label for="fileInput" class="upload-btn-label">📁 Pilih Beberapa File Gambar (PNG)</label>
+            <input type="file" id="fileInput" multiple accept="image/*">
         </div>
 
         <div class="section-subtitle">
@@ -349,7 +323,7 @@
 
         <div class="preview-grid">
             <div class="preview-box">
-                <h4>Preview Hasil Cetak (Auto Bleed)</h4>
+                <h4>Preview Hasil Cetak</h4>
                 <canvas id="printCanvas"></canvas>
             </div>
             <div class="preview-box">
@@ -495,10 +469,11 @@
         const sizeOption = document.getElementById('sheetSize').value;
         const marginMm = parseFloat(document.getElementById('sheetMargin').value) || 0;
         const gapMm = parseFloat(document.getElementById('stickerGap').value) || 0;
-        const bleedMm = parseFloat(document.getElementById('bleedAmount').value) || 0;
 
         if (sizeOption === 'A4') { 
             currentSheetW_mm = 210; currentSheetH_mm = 297; 
+        } else if (sizeOption === 'A4_Vendor') { 
+            currentSheetW_mm = 190; currentSheetH_mm = 277; 
         } else if (sizeOption === 'A3') { 
             currentSheetW_mm = 297; currentSheetH_mm = 420; 
         } else if (sizeOption === 'A3Plus') { 
@@ -506,15 +481,14 @@
         } else if (sizeOption === 'A3Plus_Vendor') { 
             currentSheetW_mm = 300; currentSheetH_mm = 450; 
         } else if (sizeOption === 'custom') {
-            currentSheetW_mm = parseFloat(document.getElementById('customWidth').value) || 300;
-            currentSheetH_mm = parseFloat(document.getElementById('customHeight').value) || 450;
+            currentSheetW_mm = parseFloat(document.getElementById('customWidth').value) || 200;
+            currentSheetH_mm = parseFloat(document.getElementById('customHeight').value) || 300;
         }
 
         const sheetW = MM_TO_PX(currentSheetW_mm);
         const sheetH = MM_TO_PX(currentSheetH_mm);
         const margin = MM_TO_PX(marginMm);
         const gap = MM_TO_PX(gapMm);
-        const bleedPx = MM_TO_PX(bleedMm);
 
         const pCanvas = document.getElementById('printCanvas');
         pCanvas.width = sheetW; pCanvas.height = sheetH;
@@ -540,4 +514,20 @@
             tempCanvas.width = itemW;
             tempCanvas.height = itemH;
             const tempCtx = tempCanvas.getContext('2d');
-      
+            tempCtx.drawImage(item.img, 0, 0, itemW, itemH);
+
+            const maskCanvas = document.createElement('canvas');
+            maskCanvas.width = itemW;
+            maskCanvas.height = itemH;
+            const maskCtx = maskCanvas.getContext('2d');
+            maskCtx.drawImage(item.img, 0, 0, itemW, itemH);
+            
+            const imgData = maskCtx.getImageData(0, 0, itemW, itemH);
+            const data = imgData.data;
+
+            for (let j = 0; j < data.length; j += 4) {
+                if (data[j + 3] > 10) { 
+                    data[j] = 255; 
+                    data[j + 1] = 0; 
+                    data[j + 2] = 0; 
+    
