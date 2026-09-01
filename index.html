@@ -7,10 +7,6 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Quicksand:wght@500;600;700&display=swap" rel="stylesheet">
-    
-    <!-- Library ZIP & Save -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
 
     <style>
         :root {
@@ -149,7 +145,7 @@
             display: flex;
             flex-direction: column;
             gap: 12px;
-            max-height: 380px;
+            max-height: 350px;
             overflow-y: auto;
         }
 
@@ -217,7 +213,6 @@
         .download-bar .btn { margin-top: 0; flex: 1; font-size: 0.88rem; padding: 12px 8px; }
         .btn-success { background: #7CA982; box-shadow: 0 4px 0 #5B8361; }
         .btn-danger { background: #D98880; box-shadow: 0 4px 0 #B5655D; }
-        .btn-zip { background: #E5A93C; box-shadow: 0 4px 0 #B37E20; }
 
         .pagination-container {
             display: none;
@@ -254,7 +249,7 @@
 
 <div class="header-title">
     <h1>✂️ Sticker Layout Studio ✨</h1>
-    <p>Susun stiker otomatis ke banyak lembar & ekspor vector SVG cutting line</p>
+    <p>Susun stiker otomatis ke banyak lembar & preview cutting line vector</p>
 </div>
 
 <div class="container">
@@ -330,10 +325,9 @@
 
         <div id="actionButtons" class="download-bar">
             <div class="download-row">
-                <button class="btn btn-success" onclick="downloadCetakCurrent()">📥 Lembar Ini (PNG)</button>
-                <button class="btn btn-danger" onclick="downloadCuttingCurrent()">✂️ Cutting Lembar Ini (SVG)</button>
+                <button class="btn btn-success" onclick="downloadCetakCurrent()">📥 Download Cetak Lembar Ini (PNG)</button>
+                <button class="btn btn-danger" onclick="downloadCuttingCurrent()">✂️ Download Cutting Lembar Ini (SVG)</button>
             </div>
-            <button class="btn btn-zip" onclick="downloadAllZip()">📦 Download Semua Lembar (ZIP)</button>
         </div>
 
         <div class="preview-grid">
@@ -342,7 +336,7 @@
                 <canvas id="printCanvas"></canvas>
             </div>
             <div class="preview-box">
-                <h4>Preview Line Cutting (Vector Outline)</h4>
+                <h4>Preview Line Cutting (Stroke Vector)</h4>
                 <canvas id="cutCanvas"></canvas>
             </div>
         </div>
@@ -366,6 +360,8 @@
         const files = Array.from(e.target.files);
         if (!files.length) return;
 
+        let loadedCount = 0;
+
         files.forEach(file => {
             const reader = new FileReader();
             reader.onload = function(evt) {
@@ -385,7 +381,10 @@
                         qty: 10
                     });
 
-                    renderStickerList();
+                    loadedCount++;
+                    if (loadedCount === files.length) {
+                        renderStickerList();
+                    }
                 };
                 img.src = evt.target.result;
             };
@@ -463,70 +462,79 @@
         renderStickerList();
     }
 
-    function drawStrokeOnly(cCtx, img, x, y, w, h) {
-        const tempC = document.createElement('canvas');
-        tempC.width = w; tempC.height = h;
-        const tempCtx = tempC.getContext('2d');
-        tempCtx.drawImage(img, 0, 0, w, h);
-
-        const imgData = tempCtx.getImageData(0, 0, w, h);
-        const d = imgData.data;
-
-        const outlineC = document.createElement('canvas');
-        outlineC.width = w; outlineC.height = h;
-        const oCtx = outlineC.getContext('2d');
-        const oData = oCtx.createImageData(w, h);
-        const od = oData.data;
-
-        for (let py = 0; py < h; py++) {
-            for (let px = 0; px < w; px++) {
-                const idx = (py * w + px) * 4;
-                if (d[idx + 3] > 20) {
-                    let isEdge = false;
-                    if (px === 0 || px === w - 1 || py === 0 || py === h - 1) {
-                        isEdge = true;
-                    } else {
-                        const topA = d[((py - 1) * w + px) * 4 + 3];
-                        const botA = d[((py + 1) * w + px) * 4 + 3];
-                        const leftA = d[(py * w + (px - 1)) * 4 + 3];
-                        const rightA = d[(py * w + (px + 1)) * 4 + 3];
-                        if (topA <= 20 || botA <= 20 || leftA <= 20 || rightA <= 20) isEdge = true;
-                    }
-
-                    if (isEdge) {
-                        od[idx] = 230;     
-                        od[idx + 1] = 50;  
-                        od[idx + 2] = 50;  
-                        od[idx + 3] = 255; 
-                    }
-                }
-            }
-        }
-        oCtx.putImageData(oData, 0, 0);
-        cCtx.drawImage(outlineC, x, y);
+    function drawCutOutline(cCtx, x, y, w, h) {
+        cCtx.strokeStyle = '#FF0000';
+        cCtx.lineWidth = 4;
+        cCtx.strokeRect(x, y, w, h);
     }
 
-    function getContourSVGPath(img, targetW_mm, targetH_mm, offsetX_mm, offsetY_mm) {
-        const tempC = document.createElement('canvas');
-        tempC.width = 150; 
-        tempC.height = Math.round(150 * (img.height / img.width));
-        const ctx = tempC.getContext('2d');
-        ctx.drawImage(img, 0, 0, tempC.width, tempC.height);
+    function createNewPage(sheetW, sheetH) {
+        const pCanvas = document.createElement('canvas');
+        pCanvas.width = sheetW; pCanvas.height = sheetH;
+        const pCtx = pCanvas.getContext('2d');
+        pCtx.fillStyle = '#FFFFFF'; pCtx.fillRect(0, 0, sheetW, sheetH);
 
-        const w = tempC.width;
-        const h = tempC.height;
-        const imgData = ctx.getImageData(0, 0, w, h).data;
+        const cCanvas = document.createElement('canvas');
+        cCanvas.width = sheetW; cCanvas.height = sheetH;
+        const cCtx = cCanvas.getContext('2d');
+        cCtx.fillStyle = '#FFFFFF'; cCtx.fillRect(0, 0, sheetW, sheetH);
 
-        let points = [];
-        for (let y = 0; y < h; y++) {
-            for (let x = 0; x < w; x++) {
-                const alpha = imgData[(y * w + x) * 4 + 3];
-                if (alpha > 20) {
-                    let isEdge = false;
-                    if (x === 0 || x === w - 1 || y === 0 || y === h - 1) {
-                        isEdge = true;
-                    } else {
-                        const aTop = imgData[((y - 1) * w + x) * 4 + 3];
-                        const aBot = imgData[((y + 1) * w + x) * 4 + 3];
-                        const aLeft = imgData[(y * w + (x - 1)) * 4 + 3];
-                      
+        return {
+            printCanvas: pCanvas,
+            printCtx: pCtx,
+            cutCanvas: cCanvas,
+            cutCtx: cCtx,
+            svgRects: []
+        };
+    }
+
+    function generateLayout() {
+        if (uploadedStickers.length === 0) {
+            alert("Upload minimal 1 gambar stiker dulu ya!");
+            return;
+        }
+
+        const sizeOption = document.getElementById('sheetSize').value;
+        const marginMm = parseFloat(document.getElementById('sheetMargin').value) || 0;
+        const gapMm = parseFloat(document.getElementById('stickerGap').value) || 0;
+
+        if (sizeOption === 'A4') { currentSheetW_mm = 210; currentSheetH_mm = 297; }
+        else if (sizeOption === 'A4_Vendor') { currentSheetW_mm = 190; currentSheetH_mm = 277; }
+        else if (sizeOption === 'A3') { currentSheetW_mm = 297; currentSheetH_mm = 420; }
+        else if (sizeOption === 'A3Plus') { currentSheetW_mm = 329; currentSheetH_mm = 483; }
+        else if (sizeOption === 'A3Plus_Vendor') { currentSheetW_mm = 300; currentSheetH_mm = 450; }
+        else if (sizeOption === 'custom') {
+            currentSheetW_mm = parseFloat(document.getElementById('customWidth').value) || 200;
+            currentSheetH_mm = parseFloat(document.getElementById('customHeight').value) || 300;
+        }
+
+        const sheetW = MM_TO_PX(currentSheetW_mm);
+        const sheetH = MM_TO_PX(currentSheetH_mm);
+        const margin = MM_TO_PX(marginMm);
+        const gap = MM_TO_PX(gapMm);
+
+        pagesData = [];
+        let currentPage = createNewPage(sheetW, sheetH);
+        pagesData.push(currentPage);
+
+        let curX = margin;
+        let curY = margin;
+        let maxRowHeight = 0;
+
+        uploadedStickers.forEach(item => {
+            const itemW = MM_TO_PX(item.widthMm);
+            const itemH = MM_TO_PX(item.heightMm);
+
+            for (let i = 0; i < item.qty; i++) {
+                if (curX + itemW > sheetW - margin) {
+                    curX = margin;
+                    curY += maxRowHeight + gap;
+                    maxRowHeight = 0;
+                }
+
+                if (curY + itemH > sheetH - margin) {
+                    currentPage = createNewPage(sheetW, sheetH);
+                    pagesData.push(currentPage);
+                    curX = margin;
+                    curY = margin;
+                    maxRowHeight = 
