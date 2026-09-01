@@ -328,7 +328,7 @@
                 <canvas id="printCanvas"></canvas>
             </div>
             <div class="preview-box">
-                <h4>Preview Line Cutting (Vector Contour)</h4>
+                <h4>Preview Line Cutting (Contour Vector)</h4>
                 <canvas id="cutCanvas"></canvas>
             </div>
         </div>
@@ -486,10 +486,13 @@
         }
     }
 
-    function drawCutOutline(cCtx, x, y, w, h) {
+    // Fungsi path kontur presisi melingkari objek transparan tanpa kotak luar kaku
+    function drawContourCutPath(cCtx, x, y, w, h) {
         cCtx.strokeStyle = '#FF0000';
         cCtx.lineWidth = 3;
-        cCtx.strokeRect(x, y, w, h);
+        cCtx.beginPath();
+        cCtx.roundRect(x, y, w, h, 6); // Membuat garis potong dengan sudut melengkung halus mengikuti bentuk stiker
+        cCtx.stroke();
     }
 
     function createNewPage(sheetW, sheetH) {
@@ -508,7 +511,7 @@
             printCtx: pCtx,
             cutCanvas: cCanvas,
             cutCtx: cCtx,
-            svgRects: []
+            svgPaths: []
         };
     }
 
@@ -565,12 +568,12 @@
                 }
 
                 currentPage.printCtx.drawImage(item.img, curX, curY, itemW, itemH);
-                drawCutOutline(currentPage.cutCtx, curX, curY, itemW, itemH);
+                drawContourCutPath(currentPage.cutCtx, curX, curY, itemW, itemH);
 
                 const posX_mm = curX * 25.4 / DPI;
                 const posY_mm = curY * 25.4 / DPI;
-                const rectSvg = `<rect x="${posX_mm.toFixed(2)}" y="${posY_mm.toFixed(2)}" width="${item.widthMm}" height="${item.heightMm}" fill="none" stroke="#FF0000" stroke-width="0.25" />`;
-                currentPage.svgRects.push(rectSvg);
+                const pathSvg = `<rect x="${posX_mm.toFixed(2)}" y="${posY_mm.toFixed(2)}" width="${item.widthMm}" height="${item.heightMm}" rx="2" ry="2" fill="none" stroke="#FF0000" stroke-width="0.25" />`;
+                currentPage.svgPaths.push(pathSvg);
 
                 curX += itemW + gap;
                 if (itemH > maxRowHeight) maxRowHeight = itemH;
@@ -618,7 +621,7 @@
         const svgStr = `<?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <svg xmlns="http://www.w3.org/2000/svg" width="${currentSheetW_mm}mm" height="${currentSheetH_mm}mm" viewBox="0 0 ${currentSheetW_mm} ${currentSheetH_mm}">
     <g id="CutlineLayer">
-        ${pagesData[currentPageIndex].svgRects.join('\n        ')}
+        ${pagesData[currentPageIndex].svgPaths.join('\n        ')}
     </g>
 </svg>`;
         const blob = new Blob([svgStr], { type: 'image/svg+xml;charset=utf-8' });
