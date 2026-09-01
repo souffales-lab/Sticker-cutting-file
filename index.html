@@ -9,6 +9,10 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Quicksand:wght@500;600;700&display=swap" rel="stylesheet">
     
+    <!-- JSZip & FileSaver untuk Multi-Page Download ZIP -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+
     <style>
         :root {
             --bg-cream: #FFFDF7;
@@ -133,7 +137,6 @@
             border-radius: var(--radius-md);
         }
 
-        /* Styling Tombol Upload Baru */
         .btn-upload-box {
             border: 2px dashed var(--border-dashed);
             color: var(--brown-dark);
@@ -148,9 +151,7 @@
             transition: all 0.2s ease;
         }
 
-        .btn-upload-box:hover { 
-            background-color: var(--accent-yellow); 
-        }
+        .btn-upload-box:hover { background-color: var(--accent-yellow); }
 
         .sticker-list {
             display: flex;
@@ -230,13 +231,41 @@
         .btn:hover { background: var(--brown-btn-hover); transform: translateY(-1px); }
         .btn:active { transform: translateY(3px); box-shadow: none; }
 
-        .download-bar { display: none; gap: 12px; margin-bottom: 20px; }
-        .download-bar .btn { margin-top: 0; flex: 1; }
+        .download-bar { display: none; flex-direction: column; gap: 10px; margin-bottom: 20px; }
+        .download-row { display: flex; gap: 10px; }
+        .download-bar .btn { margin-top: 0; flex: 1; font-size: 0.88rem; padding: 12px 8px; }
         .btn-success { background: #7CA982; box-shadow: 0 4px 0 #5B8361; }
         .btn-success:hover { background: #6B9871; }
-        
         .btn-danger { background: #D98880; box-shadow: 0 4px 0 #B5655D; }
         .btn-danger:hover { background: #C7776F; }
+        .btn-zip { background: #E5A93C; box-shadow: 0 4px 0 #B37E20; }
+        .btn-zip:hover { background: #D6972B; }
+
+        /* Pagination Control */
+        .pagination-container {
+            display: none;
+            justify-content: space-between;
+            align-items: center;
+            background: var(--card-cream);
+            padding: 10px 16px;
+            border-radius: var(--radius-lg);
+            border: 2px solid var(--border-solid);
+            margin-bottom: 16px;
+        }
+
+        .page-btn {
+            background: var(--brown-btn);
+            color: #fff;
+            border: none;
+            padding: 6px 14px;
+            border-radius: var(--radius-md);
+            font-family: 'Fredoka', cursive;
+            cursor: pointer;
+            font-size: 0.85rem;
+        }
+        .page-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+        .page-info { font-family: 'Fredoka', cursive; font-weight: 600; color: var(--brown-dark); font-size: 0.95rem; }
 
         .preview-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
         @media (max-width: 700px) { .preview-grid { grid-template-columns: 1fr; } }
@@ -251,7 +280,7 @@
 
 <div class="header-title">
     <h1>✂️ Sticker Layout Studio ✨</h1>
-    <p>Susun stiker otomatis ke sheet standar/custom & ekspor vector SVG cutting line</p>
+    <p>Susun stiker otomatis ke banyak lembar & ekspor vector SVG cutting line</p>
 </div>
 
 <div class="container">
@@ -297,7 +326,6 @@
         </div>
 
         <div class="form-group">
-            <!-- Input File Langsung Tanpa Wrapper Rumit -->
             <label class="btn-upload-box" for="fileInput">
                 📁 Klik Di Sini Untuk Pilih Gambar (PNG)
             </label>
@@ -313,15 +341,25 @@
             <div class="empty-state">Belum ada gambar yang di-upload.</div>
         </div>
 
-        <button class="btn" onclick="generateLayout()">✨ Generate Layout Sheet</button>
+        <button class="btn" onclick="generateLayout()">✨ Generate Multi-Page Layout</button>
     </div>
 
     <div class="card">
         <div class="card-title">👁️ Preview & Download</div>
 
+        <!-- Navigasi Lembar -->
+        <div id="pagination" class="pagination-container">
+            <button id="prevPageBtn" class="page-btn" onclick="changePage(-1)">◀ Lembar Sebelum</button>
+            <span id="pageIndicator" class="page-info">Lembar 1 dari 1</span>
+            <button id="nextPageBtn" class="page-btn" onclick="changePage(1)">Lembar Berikut ▶</button>
+        </div>
+
         <div id="actionButtons" class="download-bar">
-            <button class="btn btn-success" onclick="downloadCetak()">📥 Download Cetak (PNG)</button>
-            <button class="btn btn-danger" onclick="downloadCuttingSVG()">✂️ Download Cutting (Vector SVG)</button>
+            <div class="download-row">
+                <button class="btn btn-success" onclick="downloadCetakCurrent()">📥 Lembar Ini (PNG)</button>
+                <button class="btn btn-danger" onclick="downloadCuttingCurrent()">✂️ Cutting Lembar Ini (SVG)</button>
+            </div>
+            <button class="btn btn-zip" onclick="downloadAllZip()">📦 Download Semua Lembar (ZIP)</button>
         </div>
 
         <div class="preview-grid">
@@ -330,7 +368,7 @@
                 <canvas id="printCanvas"></canvas>
             </div>
             <div class="preview-box">
-                <h4>Preview Line Cutting (Vector Path)</h4>
+                <h4>Preview Line Cutting (Stroke Vector)</h4>
                 <canvas id="cutCanvas"></canvas>
             </div>
         </div>
@@ -341,51 +379,91 @@
     const DPI = 300; 
     const MM_TO_PX = (mm) => Math.round((mm * DPI) / 25.4);
     let uploadedStickers = [];
-    let svgDataContent = "";
+    
+    // Multi-page stores
+    let pagesData = []; // Array simpan data tiap halaman { printCanvas, cutCanvas, svgContent }
+    let currentPageIndex = 0;
     let currentSheetW_mm = 297, currentSheetH_mm = 420;
 
     function toggleCustomSize() {
         const select = document.getElementById('sheetSize');
         const customDiv = document.getElementById('customDimensions');
-        if (select.value === 'custom') {
-            customDiv.style.display = 'grid';
-        } else {
-            customDiv.style.display = 'none';
-        }
+        customDiv.style.display = (select.value === 'custom') ? 'grid' : 'none';
     }
 
-    // Fungsi Baru Pengolah Upload File yang Lebih Stabil
+    function cropTransparentPixels(img) {
+        const tempC = document.createElement('canvas');
+        tempC.width = img.width;
+        tempC.height = img.height;
+        const ctx = tempC.getContext('2d');
+        ctx.drawImage(img, 0, 0);
+
+        const imgData = ctx.getImageData(0, 0, img.width, img.height);
+        const data = imgData.data;
+
+        let minX = img.width, minY = img.height, maxX = 0, maxY = 0;
+        let found = false;
+
+        for (let y = 0; y < img.height; y++) {
+            for (let x = 0; x < img.width; x++) {
+                const alpha = data[(y * img.width + x) * 4 + 3];
+                if (alpha > 10) {
+                    if (x < minX) minX = x;
+                    if (x > maxX) maxX = x;
+                    if (y < minY) minY = y;
+                    if (y > maxY) maxY = y;
+                    found = true;
+                }
+            }
+        }
+
+        if (!found) return img;
+
+        const cropW = maxX - minX + 1;
+        const cropH = maxY - minY + 1;
+
+        const croppedC = document.createElement('canvas');
+        croppedC.width = cropW;
+        croppedC.height = cropH;
+        const croppedCtx = croppedC.getContext('2d');
+        croppedCtx.drawImage(tempC, minX, minY, cropW, cropH, 0, 0, cropW, cropH);
+
+        const croppedImg = new Image();
+        croppedImg.src = croppedC.toDataURL();
+        return { img: croppedImg, width: cropW, height: cropH, originalCanvas: croppedC };
+    }
+
     function handleFileSelect(e) {
         const files = Array.from(e.target.files);
         if (!files.length) return;
 
         files.forEach(file => {
-            const img = new Image();
+            const rawImg = new Image();
             const objectUrl = URL.createObjectURL(file);
             
-            img.onload = function() {
-                const ratio = img.height / img.width;
-                const defaultWidth = 50;
-                const defaultHeight = Math.round(defaultWidth * ratio);
+            rawImg.onload = function() {
+                const cropped = cropTransparentPixels(rawImg);
+                
+                cropped.img.onload = function() {
+                    const ratio = cropped.height / cropped.width;
+                    const defaultWidth = 50;
+                    const defaultHeight = Math.round(defaultWidth * ratio);
 
-                uploadedStickers.push({
-                    id: Date.now() + Math.random(),
-                    img: img,
-                    filename: file.name,
-                    widthMm: defaultWidth,
-                    heightMm: defaultHeight,
-                    aspectRatio: ratio,
-                    qty: 10
-                });
+                    uploadedStickers.push({
+                        id: Date.now() + Math.random(),
+                        img: cropped.img,
+                        canvas: cropped.originalCanvas,
+                        filename: file.name,
+                        widthMm: defaultWidth,
+                        heightMm: defaultHeight,
+                        aspectRatio: ratio,
+                        qty: 10
+                    });
 
-                renderStickerList();
+                    renderStickerList();
+                };
             };
-
-            img.onerror = function() {
-                alert("Gagal membaca file gambar: " + file.name);
-            };
-
-            img.src = objectUrl;
+            rawImg.src = objectUrl;
         });
         
         e.target.value = '';
@@ -446,148 +524,4 @@
         }
 
         const items = document.querySelectorAll('.sticker-item');
-        if (items[index]) {
-            const inputs = items[index].querySelectorAll('.sticker-inputs input');
-            inputs[0].value = item.widthMm;
-            inputs[1].value = item.heightMm;
-        }
-    }
-
-    function updateQty(index, val) {
-        uploadedStickers[index].qty = Math.max(1, parseInt(val) || 1);
-    }
-
-    function removeItem(index) {
-        uploadedStickers.splice(index, 1);
-        renderStickerList();
-    }
-
-    function generateLayout() {
-        if (uploadedStickers.length === 0) {
-            alert("Silakan upload minimal 1 gambar stiker!");
-            return;
-        }
-
-        const sizeOption = document.getElementById('sheetSize').value;
-        const marginMm = parseFloat(document.getElementById('sheetMargin').value) || 0;
-        const gapMm = parseFloat(document.getElementById('stickerGap').value) || 0;
-
-        if (sizeOption === 'A4') { 
-            currentSheetW_mm = 210; currentSheetH_mm = 297; 
-        } else if (sizeOption === 'A4_Vendor') { 
-            currentSheetW_mm = 190; currentSheetH_mm = 277; 
-        } else if (sizeOption === 'A3') { 
-            currentSheetW_mm = 297; currentSheetH_mm = 420; 
-        } else if (sizeOption === 'A3Plus') { 
-            currentSheetW_mm = 329; currentSheetH_mm = 483; 
-        } else if (sizeOption === 'A3Plus_Vendor') { 
-            currentSheetW_mm = 300; currentSheetH_mm = 450; 
-        } else if (sizeOption === 'custom') {
-            currentSheetW_mm = parseFloat(document.getElementById('customWidth').value) || 200;
-            currentSheetH_mm = parseFloat(document.getElementById('customHeight').value) || 300;
-        }
-
-        const sheetW = MM_TO_PX(currentSheetW_mm);
-        const sheetH = MM_TO_PX(currentSheetH_mm);
-        const margin = MM_TO_PX(marginMm);
-        const gap = MM_TO_PX(gapMm);
-
-        const pCanvas = document.getElementById('printCanvas');
-        pCanvas.width = sheetW; pCanvas.height = sheetH;
-        const pCtx = pCanvas.getContext('2d');
-        pCtx.fillStyle = '#FFFFFF'; pCtx.fillRect(0, 0, sheetW, sheetH);
-
-        const cCanvas = document.getElementById('cutCanvas');
-        cCanvas.width = sheetW; cCanvas.height = sheetH;
-        const cCtx = cCanvas.getContext('2d');
-        cCtx.fillStyle = '#FFFFFF'; cCtx.fillRect(0, 0, sheetW, sheetH);
-
-        let curX = margin;
-        let curY = margin;
-        let maxRowHeight = 0;
-
-        let svgPaths = [];
-
-        uploadedStickers.forEach(item => {
-            const itemW = MM_TO_PX(item.widthMm);
-            const itemH = MM_TO_PX(item.heightMm);
-
-            const tempCanvas = document.createElement('canvas');
-            tempCanvas.width = itemW;
-            tempCanvas.height = itemH;
-            const tempCtx = tempCanvas.getContext('2d');
-            tempCtx.drawImage(item.img, 0, 0, itemW, itemH);
-
-            const maskCanvas = document.createElement('canvas');
-            maskCanvas.width = itemW;
-            maskCanvas.height = itemH;
-            const maskCtx = maskCanvas.getContext('2d');
-            maskCtx.drawImage(item.img, 0, 0, itemW, itemH);
-            
-            const imgData = maskCtx.getImageData(0, 0, itemW, itemH);
-            const data = imgData.data;
-
-            for (let j = 0; j < data.length; j += 4) {
-                if (data[j + 3] > 10) { 
-                    data[j] = 255; 
-                    data[j + 1] = 0; 
-                    data[j + 2] = 0; 
-                    data[j + 3] = 255; 
-                } else {
-                    data[j + 3] = 0;
-                }
-            }
-            maskCtx.putImageData(imgData, 0, 0);
-
-            for (let i = 0; i < item.qty; i++) {
-                if (curX + itemW > sheetW - margin) {
-                    curX = margin;
-                    curY += maxRowHeight + gap;
-                    maxRowHeight = 0;
-                }
-
-                if (curY + itemH > sheetH - margin) break;
-
-                pCtx.drawImage(tempCanvas, curX, curY);
-                cCtx.drawImage(maskCanvas, curX, curY);
-
-                const posX_mm = curX * 25.4 / DPI;
-                const posY_mm = curY * 25.4 / DPI;
-                const width_mm = item.widthMm;
-                const height_mm = item.heightMm;
-
-                svgPaths.push(`<rect x="${posX_mm.toFixed(2)}" y="${posY_mm.toFixed(2)}" width="${width_mm.toFixed(2)}" height="${height_mm.toFixed(2)}" rx="2" ry="2" fill="none" stroke="#FF0000" stroke-width="0.25"/>`);
-
-                curX += itemW + gap;
-                if (itemH > maxRowHeight) maxRowHeight = itemH;
-            }
-        });
-
-        svgDataContent = `<?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<svg xmlns="http://www.w3.org/2000/svg" width="${currentSheetW_mm}mm" height="${currentSheetH_mm}mm" viewBox="0 0 ${currentSheetW_mm} ${currentSheetH_mm}">
-    <g id="CutlineLayer">
-        ${svgPaths.join('\n        ')}
-    </g>
-</svg>`;
-
-        document.getElementById('actionButtons').style.display = 'flex';
-    }
-
-    function downloadCetak() {
-        const link = document.createElement('a');
-        link.download = `File_Cetak_Sticker.png`;
-        link.href = document.getElementById('printCanvas').toDataURL('image/png');
-        link.click();
-    }
-
-    function downloadCuttingSVG() {
-        if (!svgDataContent) return;
-        const blob = new Blob([svgDataContent], { type: 'image/svg+xml;charset=utf-8' });
-        const link = document.createElement('a');
-        link.href = URL.createObjectURL(blob);
-        link.download = `File_Cutting_Vector.svg`;
-        link.click();
-    }
-</script>
-</body>
-</html>
+        if (items[index
