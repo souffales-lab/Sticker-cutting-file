@@ -336,7 +336,7 @@
                 <canvas id="printCanvas"></canvas>
             </div>
             <div class="preview-box">
-                <h4>Preview Line Cutting (Stroke Vector)</h4>
+                <h4>Preview Line Cutting (Vector Path)</h4>
                 <canvas id="cutCanvas"></canvas>
             </div>
         </div>
@@ -360,8 +360,7 @@
         const files = Array.from(e.target.files);
         if (!files.length) return;
 
-        let loadedCount = 0;
-
+        let loaded = 0;
         files.forEach(file => {
             const reader = new FileReader();
             reader.onload = function(evt) {
@@ -381,16 +380,13 @@
                         qty: 10
                     });
 
-                    loadedCount++;
-                    if (loadedCount === files.length) {
-                        renderStickerList();
-                    }
+                    loaded++;
+                    if (loaded === files.length) renderStickerList();
                 };
                 img.src = evt.target.result;
             };
             reader.readAsDataURL(file);
         });
-
         e.target.value = '';
     }
 
@@ -464,7 +460,7 @@
 
     function drawCutOutline(cCtx, x, y, w, h) {
         cCtx.strokeStyle = '#FF0000';
-        cCtx.lineWidth = 4;
+        cCtx.lineWidth = 3;
         cCtx.strokeRect(x, y, w, h);
     }
 
@@ -537,4 +533,7 @@
                     pagesData.push(currentPage);
                     curX = margin;
                     curY = margin;
-                    maxRowHeight = 
+                    maxRowHeight = 0;
+                }
+
+                currentPage.printCtx.drawImag
