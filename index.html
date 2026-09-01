@@ -366,22 +366,21 @@
                 reader.onload = function(evt) {
                     const img = new Image();
                     img.onload = function() {
-                        // 1. AUTO-TRIM: Otomatis buang area transparan luar, ambil batas objek sesungguhnya
                         const trimmedData = autoTrimImage(img);
                         
                         const ratio = trimmedData.height / trimmedData.width;
-                        const defaultWidth = 50; // Default 50mm berdasarkan objek terpangkas
+                        const defaultWidth = 50; 
                         const defaultHeight = Math.round(defaultWidth * ratio);
 
                         uploadedStickers.push({
                             id: Date.now() + Math.random(),
-                            trimmedCanvas: trimmedData.canvas, // Canvas objek yang sudah dipangkas bersih
+                            trimmedCanvas: trimmedData.canvas,
                             filename: file.name,
                             widthMm: defaultWidth,
                             heightMm: defaultHeight,
                             aspectRatio: ratio,
                             qty: 10,
-                            contourPoints: trimmedData.contourPoints // Titik kontur relatif dari area yang sudah bersih
+                            contourPoints: trimmedData.contourPoints
                         });
 
                         loaded++;
@@ -403,7 +402,6 @@
         btnDownloadSVG.addEventListener('click', downloadCuttingCurrent);
     });
 
-    // Fungsi otomatis mendeteksi batas pixel tidak transparan (membuang ruang kosong/padding transparan luar)
     function autoTrimImage(img) {
         const tempCanvas = document.createElement('canvas');
         tempCanvas.width = img.width;
@@ -415,7 +413,6 @@
 
         let minX = img.width, minY = img.height, maxX = 0, maxY = 0;
 
-        // Cari batas kotak objek terluar yang memiliki alpha > 30
         for (let y = 0; y < img.height; y++) {
             for (let x = 0; x < img.width; x++) {
                 const alpha = data[(y * img.width + x) * 4 + 3];
@@ -428,7 +425,6 @@
             }
         }
 
-        // Jika gambar sepenuhnya transparan
         if (minX > maxX || minY > maxY) {
             minX = 0; minY = 0; maxX = img.width; maxY = img.height;
         }
@@ -436,14 +432,12 @@
         const cropWidth = maxX - minX + 1;
         const cropHeight = maxY - minY + 1;
 
-        // Buat canvas baru khusus area objek yang sudah dipangkas (trimmed)
         const finalCanvas = document.createElement('canvas');
         finalCanvas.width = cropWidth;
         finalCanvas.height = cropHeight;
         const fCtx = finalCanvas.getContext('2d');
         fCtx.drawImage(tempCanvas, minX, minY, cropWidth, cropHeight, 0, 0, cropWidth, cropHeight);
 
-        // Ekstrak titik kontur siluet tepat dari canvas yang sudah dipangkas
         const trimmedData = fCtx.getImageData(0, 0, cropWidth, cropHeight);
         const tPixels = trimmedData.data;
         const step = Math.max(1, Math.floor(Math.min(cropWidth, cropHeight) / 100));
@@ -476,7 +470,24 @@
             if (rightX2 !== -1) outerPoints.push({ x: rightX2, y: y });
         }
 
-        const contourPoints = outerPoints.map(p => ({ x: p.x / cropWidth, y: p.y / cropHeight }));
+        // Urutkan berdasarkan sudut (angle) dari titik pusat (centroid) agar tidak saling menyilang
+        let cx = 0, cy = 0;
+        outerPoints.forEach(p => { cx += p.x; cy += p.y; });
+        cx /= outerPoints.length;
+        cy /= outerPoints.length;
+
+        outerPoints.sort((a, b) => {
+            let angleA = Math.atan2(a.y - cy, a.x - cx);
+            let angleB = Math.atan2(b.y - cy, b.x - cx);
+            return angleA - angleB;
+        });
+
+        let contourPoints = [];
+        for (let i = 0; i < outerPoints.length; i++) {
+            if (i === 0 || Math.hypot(outerPoints[i].x - contourPoints[contourPoints.length - 1].x, outerPoints[i].y - contourPoints[contourPoints.length - 1].y) > 3) {
+                contourPoints.push({ x: outerPoints[i].x / cropWidth, y: outerPoints[i].y / cropHeight });
+            }
+        }
 
         return {
             canvas: finalCanvas,
@@ -645,10 +656,8 @@
                     maxRowHeight = 0;
                 }
 
-                // Cetak gambar stiker yang sudah bersih dari padding transparan
                 currentPage.printCtx.drawImage(item.trimmedCanvas, curX, curY, itemW, itemH);
 
-                // Render garis potong contour siluet
                 currentPage.cutCtx.strokeStyle = '#FF0000';
                 currentPage.cutCtx.lineWidth = 2;
                 currentPage.cutCtx.beginPath();
