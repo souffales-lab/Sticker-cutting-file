@@ -3,174 +3,162 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sticker Sheet & Cutline Studio Pro</title>
+    <title>Sticker Sheet & Cutline Studio ✨</title>
+    <!-- Google Fonts untuk font hangat & imut khas Souffales -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Quicksand:wght@500;600;700&display=swap" rel="stylesheet">
+    
     <style>
         :root {
-            --primary: #4F46E5;
-            --primary-hover: #4338CA;
-            --secondary: #64748B;
-            --bg: #F8FAFC;
+            --bg-cream: #FFFDF7;
+            --card-cream: #FFFDF0;
             --card-bg: #FFFFFF;
-            --text-main: #0F172A;
-            --text-muted: #64748B;
-            --border: #E2E8F0;
-            --danger: #EF4444;
-            --danger-hover: #DC2626;
-            --success: #10B981;
-            --shadow-sm: 0 1px 3px rgba(0,0,0,0.05);
-            --shadow-md: 0 4px 12px -2px rgba(0,0,0,0.08);
-            --radius-lg: 16px;
-            --radius-md: 10px;
-            --radius-sm: 6px;
+            --accent-yellow: #FDE8AF;
+            --accent-yellow-hover: #FCD982;
+            --brown-text: #785A46;
+            --brown-dark: #5C4333;
+            --brown-btn: #A0785C;
+            --brown-btn-hover: #8A644A;
+            --border-dashed: #E2CFB4;
+            --border-solid: #EFE4D3;
+            --danger: #E57373;
+            --success: #81C784;
+            --radius-xl: 24px;
+            --radius-lg: 18px;
+            --radius-md: 12px;
+            --radius-sm: 8px;
         }
 
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background-color: var(--bg);
-            color: var(--text-main);
+            font-family: 'Quicksand', sans-serif;
+            background-color: var(--bg-cream);
+            color: var(--brown-text);
             line-height: 1.5;
             padding: 24px 16px;
         }
 
-        .header-title {
-            text-align: center;
-            margin-bottom: 24px;
+        .header-title { text-align: center; margin-bottom: 24px; }
+        .header-title h1 { 
+            font-family: 'Fredoka', cursive;
+            font-size: 2rem; 
+            font-weight: 700; 
+            color: var(--brown-dark); 
         }
-
-        .header-title h1 {
-            font-size: 1.8rem;
-            font-weight: 700;
-            color: var(--text-main);
-            letter-spacing: -0.02em;
-        }
-
-        .header-title p {
-            color: var(--text-muted);
-            font-size: 0.95rem;
-            margin-top: 4px;
-        }
+        .header-title p { color: var(--brown-text); font-size: 0.95rem; margin-top: 4px; font-weight: 600; }
 
         .container {
             max-width: 1280px;
             margin: 0 auto;
             display: grid;
-            grid-template-columns: 400px 1fr;
+            grid-template-columns: 420px 1fr;
             gap: 24px;
             align-items: start;
         }
 
         @media (max-width: 900px) {
-            .container {
-                grid-template-columns: 1fr;
-            }
+            .container { grid-template-columns: 1fr; }
         }
 
         .card {
             background: var(--card-bg);
-            border: 1px solid var(--border);
-            border-radius: var(--radius-lg);
+            border: 2px solid var(--border-solid);
+            border-radius: var(--radius-xl);
             padding: 24px;
-            box-shadow: var(--shadow-md);
+            box-shadow: 0 4px 16px rgba(120, 90, 70, 0.05);
         }
 
         .card-title {
-            font-size: 1.15rem;
-            font-weight: 700;
+            font-family: 'Fredoka', cursive;
+            font-size: 1.25rem;
+            font-weight: 600;
             margin-bottom: 20px;
             display: flex;
             align-items: center;
             gap: 8px;
-            color: var(--text-main);
+            color: var(--brown-dark);
         }
 
         .section-subtitle {
-            font-size: 0.95rem;
-            font-weight: 700;
-            color: var(--text-main);
+            font-family: 'Fredoka', cursive;
+            font-size: 1.05rem;
+            font-weight: 600;
             margin: 20px 0 12px 0;
             padding-bottom: 6px;
-            border-bottom: 1px solid var(--border);
+            border-bottom: 2px dashed var(--border-dashed);
             display: flex;
             justify-content: space-between;
             align-items: center;
+            color: var(--brown-dark);
         }
 
-        .form-group {
-            margin-bottom: 16px;
-        }
-
-        .form-row {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 12px;
-        }
+        .form-group { margin-bottom: 16px; }
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 
         label {
             display: block;
+            font-family: 'Fredoka', cursive;
             font-weight: 600;
-            font-size: 0.825rem;
+            font-size: 0.85rem;
             margin-bottom: 6px;
-            color: var(--text-muted);
-            text-transform: uppercase;
-            letter-spacing: 0.03em;
+            color: var(--brown-text);
+            letter-spacing: 0.02em;
         }
 
         input[type="number"], select {
             width: 100%;
-            padding: 10px 12px;
+            padding: 10px 14px;
             border-radius: var(--radius-md);
-            border: 1px solid var(--border);
-            background-color: #F8FAFC;
-            font-size: 0.9rem;
-            color: var(--text-main);
-            font-weight: 500;
-            transition: all 0.2s ease;
+            border: 2px solid var(--border-solid);
+            background-color: var(--card-cream);
+            font-family: 'Quicksand', sans-serif;
+            font-size: 0.95rem;
+            color: var(--brown-dark);
+            font-weight: 700;
             outline: none;
+            transition: all 0.2s ease;
         }
 
         input[type="number"]:focus, select:focus {
-            border-color: var(--primary);
+            border-color: var(--brown-btn);
             background-color: #FFFFFF;
-            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
         }
 
-        .file-upload-box {
-            border: 2px dashed var(--border);
-            border-radius: var(--radius-md);
-            padding: 20px;
-            text-align: center;
-            background: #FAFAFA;
-            cursor: pointer;
-            transition: all 0.2s ease;
+        .upload-btn-wrapper {
             position: relative;
+            overflow: hidden;
+            display: block;
+            width: 100%;
         }
 
-        .file-upload-box:hover {
-            border-color: var(--primary);
-            background: #F5F3FF;
+        .btn-upload {
+            border: 2px dashed var(--border-dashed);
+            color: var(--brown-dark);
+            background-color: var(--card-cream);
+            padding: 16px;
+            border-radius: var(--radius-lg);
+            font-family: 'Fredoka', cursive;
+            font-weight: 600;
+            text-align: center;
+            cursor: pointer;
+            width: 100%;
+            display: block;
+            transition: all 0.2s ease;
         }
 
-        .file-upload-box input[type="file"] {
+        .btn-upload:hover { background-color: var(--accent-yellow); }
+
+        .upload-btn-wrapper input[type=file] {
+            font-size: 100px;
             position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
+            left: 0;
+            top: 0;
             opacity: 0;
             cursor: pointer;
-        }
-
-        .file-upload-label {
-            font-size: 0.875rem;
-            color: var(--text-muted);
-            font-weight: 500;
-        }
-
-        .file-upload-label strong {
-            color: var(--primary);
+            height: 100%;
+            width: 100%;
         }
 
         .sticker-list {
@@ -179,212 +167,108 @@
             gap: 12px;
             max-height: 400px;
             overflow-y: auto;
-            padding-right: 4px;
         }
 
         .sticker-item {
             position: relative;
-            background: #F8FAFC;
-            border: 1px solid var(--border);
-            border-radius: var(--radius-md);
+            background: var(--card-cream);
+            border: 1.5px solid var(--border-solid);
+            border-radius: var(--radius-lg);
             padding: 12px;
             display: flex;
             gap: 12px;
             align-items: center;
-            transition: all 0.2s ease;
-        }
-
-        .sticker-item:hover {
-            border-color: #CBD5E1;
-            box-shadow: var(--shadow-sm);
         }
 
         .sticker-thumb-wrapper {
-            width: 60px;
-            height: 60px;
+            width: 54px;
+            height: 54px;
             background: #FFFFFF;
-            border: 1px solid var(--border);
-            border-radius: var(--radius-sm);
+            border: 1px solid var(--border-solid);
+            border-radius: var(--radius-md);
             display: flex;
             align-items: center;
             justify-content: center;
-            overflow: hidden;
             flex-shrink: 0;
-            background-image: linear-gradient(45deg, #e2e8f0 25%, transparent 25%), linear-gradient(-45deg, #e2e8f0 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #e2e8f0 75%), linear-gradient(-45deg, transparent 75%, #e2e8f0 75%);
-            background-size: 10px 10px;
-            background-position: 0 0, 0 5px, 5px -5px, -5px 0px;
+            background-image: linear-gradient(45deg, #f7efe5 25%, transparent 25%), linear-gradient(-45deg, #f7efe5 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #f7efe5 75%), linear-gradient(-45deg, transparent 75%, #f7efe5 75%);
+            background-size: 8px 8px;
         }
 
-        .sticker-thumb-wrapper img {
-            max-width: 100%;
-            max-height: 100%;
-            object-fit: contain;
-        }
+        .sticker-thumb-wrapper img { max-width: 100%; max-height: 100%; object-fit: contain; }
+        .sticker-details { flex-grow: 1; }
+        .sticker-filename { font-weight: 700; font-size: 0.85rem; margin-bottom: 4px; color: var(--brown-dark); max-width: 190px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-        .sticker-details {
-            flex-grow: 1;
-        }
-
-        .sticker-filename {
-            font-size: 0.8rem;
-            font-weight: 600;
-            color: var(--text-main);
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            max-width: 200px;
-            margin-bottom: 6px;
-        }
-
-        .sticker-inputs {
-            display: grid;
-            grid-template-columns: 1fr 1fr 1fr;
-            gap: 6px;
-        }
-
-        .sticker-inputs label {
-            font-size: 0.68rem;
-            margin-bottom: 2px;
-        }
-
-        .sticker-inputs input {
-            padding: 6px 8px;
-            font-size: 0.8rem;
-        }
+        .sticker-inputs { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; }
+        .sticker-inputs label { font-size: 0.7rem; margin-bottom: 2px; }
+        .sticker-inputs input { padding: 6px 8px; font-size: 0.85rem; border-radius: var(--radius-sm); }
 
         .btn-delete {
             position: absolute;
-            top: 6px;
-            right: 6px;
+            top: 8px;
+            right: 8px;
             width: 22px;
             height: 22px;
             border-radius: 50%;
-            background: #F1F5F9;
-            color: #64748B;
+            background: var(--accent-yellow);
+            color: var(--brown-dark);
             border: none;
-            font-size: 13px;
             font-weight: bold;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
-            transition: all 0.2s ease;
-            line-height: 1;
         }
-
-        .btn-delete:hover {
-            background: var(--danger);
-            color: #FFFFFF;
-        }
+        .btn-delete:hover { background: var(--danger); color: #FFF; }
 
         .btn {
-            background: var(--primary);
+            background: var(--brown-btn);
             color: #FFFFFF;
             border: none;
-            padding: 12px 20px;
-            border-radius: var(--radius-md);
+            padding: 14px;
+            border-radius: var(--radius-lg);
+            font-family: 'Fredoka', cursive;
+            font-size: 1rem;
             font-weight: 600;
-            font-size: 0.95rem;
             cursor: pointer;
             width: 100%;
             margin-top: 16px;
             transition: all 0.2s ease;
-            box-shadow: 0 2px 4px rgba(79, 70, 229, 0.2);
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
+            box-shadow: 0 4px 0 var(--brown-dark);
         }
 
-        .btn:hover {
-            background: var(--primary-hover);
-            transform: translateY(-1px);
-        }
+        .btn:hover { background: var(--brown-btn-hover); transform: translateY(-1px); }
+        .btn:active { transform: translateY(3px); box-shadow: none; }
 
-        .btn-success {
-            background: var(--success);
-            box-shadow: 0 2px 4px rgba(16, 185, 129, 0.2);
-        }
-        .btn-success:hover { background: #059669; }
+        .download-bar { display: none; gap: 12px; margin-bottom: 20px; }
+        .download-bar .btn { margin-top: 0; flex: 1; }
+        .btn-success { background: #7CA982; box-shadow: 0 4px 0 #5B8361; }
+        .btn-success:hover { background: #6B9871; }
+        
+        .btn-danger { background: #D98880; box-shadow: 0 4px 0 #B5655D; }
+        .btn-danger:hover { background: #C7776F; }
 
-        .btn-danger {
-            background: var(--danger);
-            box-shadow: 0 2px 4px rgba(239, 68, 68, 0.2);
-        }
-        .btn-danger:hover { background: var(--danger-hover); }
+        .preview-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+        @media (max-width: 700px) { .preview-grid { grid-template-columns: 1fr; } }
 
-        .download-bar {
-            display: none;
-            gap: 12px;
-            margin-bottom: 24px;
-        }
-
-        .download-bar .btn {
-            margin-top: 0;
-            flex: 1;
-        }
-
-        .preview-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-        }
-
-        @media (max-width: 700px) {
-            .preview-grid {
-                grid-template-columns: 1fr;
-            }
-        }
-
-        .preview-box {
-            background: #F8FAFC;
-            border: 1px solid var(--border);
-            border-radius: var(--radius-md);
-            padding: 16px;
-            text-align: center;
-        }
-
-        .preview-box h4 {
-            font-size: 0.875rem;
-            font-weight: 600;
-            color: var(--text-muted);
-            margin-bottom: 12px;
-            text-transform: uppercase;
-            letter-spacing: 0.03em;
-        }
-
-        canvas {
-            border: 1px solid var(--border);
-            border-radius: var(--radius-sm);
-            max-width: 100%;
-            height: auto;
-            background-color: white;
-            box-shadow: var(--shadow-sm);
-        }
-
-        .empty-state {
-            color: var(--text-muted);
-            font-size: 0.875rem;
-            font-style: italic;
-            text-align: center;
-            padding: 20px 0;
-        }
+        .preview-box { background: var(--card-cream); border: 2px solid var(--border-solid); border-radius: var(--radius-lg); padding: 14px; text-align: center; }
+        .preview-box h4 { font-family: 'Fredoka', cursive; font-size: 0.9rem; color: var(--brown-text); margin-bottom: 8px; }
+        canvas { max-width: 100%; height: auto; border: 2px solid var(--border-solid); border-radius: var(--radius-md); background: #FFF; }
+        .empty-state { color: var(--brown-text); font-size: 0.85rem; text-align: center; padding: 20px 0; font-weight: 600; }
     </style>
 </head>
 <body>
 
 <div class="header-title">
-    <h1>✂️ Sticker Layout & Cutline Studio</h1>
-    <p>Susun stiker otomatis ke sheet A4/A3 lengkap dengan file cetak dan pola potong (cutline)</p>
+    <h1>✂️ Sticker Layout Studio ✨</h1>
+    <p>Susun stiker otomatis ke sheet A4/A3 lengkap dengan file cetak dan cutline</p>
 </div>
 
 <div class="container">
-    <!-- PANEL SETUP -->
     <div class="card">
         <div class="card-title">⚙️ Pengaturan Lembar</div>
         
         <div class="form-group">
-            <label>Ukuran Kertas (Sheet Size)</label>
+            <label>Ukuran Kertas</label>
             <select id="sheetSize">
                 <option value="A4">A4 (210 x 297 mm)</option>
                 <option value="A3" selected>A3 (297 x 420 mm)</option>
@@ -395,11 +279,11 @@
         <div class="form-row">
             <div class="form-group">
                 <label>Margin (mm)</label>
-                <input type="number" id="sheetMargin" value="10" min="0">
+                <input type="number" id="sheetMargin" value="10">
             </div>
             <div class="form-group">
-                <label>Jarak / Gap (mm)</label>
-                <input type="number" id="stickerGap" value="3" min="0">
+                <label>Jarak (mm)</label>
+                <input type="number" id="stickerGap" value="3">
             </div>
         </div>
 
@@ -408,33 +292,30 @@
         </div>
 
         <div class="form-group">
-            <div class="file-upload-box">
-                <input type="file" id="fileInput" multiple accept="image/png">
-                <div class="file-upload-label">
-                    📁 <strong>Klik atau geser file PNG</strong> transparan ke sini
-                </div>
+            <div class="upload-btn-wrapper">
+                <button class="btn-upload">📁 Pilih File Gambar (PNG)</button>
+                <input type="file" id="fileInput" multiple accept="image/*">
             </div>
         </div>
 
         <div class="section-subtitle">
             <span>📋 Daftar Desain</span>
-            <span id="itemCount" style="font-size:0.75rem; color:var(--text-muted); font-weight:normal;">0 item</span>
+            <span id="itemCount" style="font-size:0.75rem; color:var(--brown-text);">0 item</span>
         </div>
 
         <div id="stickerList" class="sticker-list">
             <div class="empty-state">Belum ada gambar yang di-upload.</div>
         </div>
 
-        <button class="btn" onclick="generateLayout()">🔄 Generate Layout Sheet</button>
+        <button class="btn" onclick="generateLayout()">✨ Generate Layout Sheet</button>
     </div>
 
-    <!-- PANEL PREVIEW -->
     <div class="card">
         <div class="card-title">👁️ Preview & Download</div>
 
         <div id="actionButtons" class="download-bar">
-            <button class="btn btn-success" onclick="downloadCetak()">📥 Download File Cetak</button>
-            <button class="btn btn-danger" onclick="downloadCutting()">✂️ Download File Cutting</button>
+            <button class="btn btn-success" onclick="downloadCetak()">📥 Download Cetak</button>
+            <button class="btn btn-danger" onclick="downloadCutting()">✂️ Download Cutting</button>
         </div>
 
         <div class="preview-grid">
@@ -453,12 +334,11 @@
 <script>
     const DPI = 300; 
     const MM_TO_PX = (mm) => Math.round((mm * DPI) / 25.4);
-
     let uploadedStickers = [];
 
     document.getElementById('fileInput').addEventListener('change', function(e) {
         const files = e.target.files;
-        if (!files.length) return;
+        if (!files || !files.length) return;
 
         Array.from(files).forEach(file => {
             const reader = new FileReader();
@@ -466,7 +346,7 @@
                 const img = new Image();
                 img.onload = function() {
                     const ratio = img.height / img.width;
-                    const defaultWidth = 50; // mm
+                    const defaultWidth = 50;
                     const defaultHeight = Math.round(defaultWidth * ratio);
 
                     uploadedStickers.push({
@@ -476,7 +356,7 @@
                         widthMm: defaultWidth,
                         heightMm: defaultHeight,
                         aspectRatio: ratio,
-                        qty: 1
+                        qty: 10
                     });
                     renderStickerList();
                 };
@@ -484,13 +364,12 @@
             };
             reader.readAsDataURL(file);
         });
-        this.value = ''; // Reset input
+        this.value = '';
     });
 
     function renderStickerList() {
         const container = document.getElementById('stickerList');
         const countSpan = document.getElementById('itemCount');
-        
         countSpan.innerText = `${uploadedStickers.length} item`;
 
         if (uploadedStickers.length === 0) {
@@ -542,7 +421,6 @@
             item.widthMm = Math.round(numVal / item.aspectRatio);
         }
 
-        // Update nilainya di input tanpa merender ulang seluruh list (agar fokus cursor tidak hilang)
         const items = document.querySelectorAll('.sticker-item');
         if (items[index]) {
             const inputs = items[index].querySelectorAll('.sticker-inputs input');
@@ -552,8 +430,7 @@
     }
 
     function updateQty(index, val) {
-        const numVal = parseInt(val) || 1;
-        uploadedStickers[index].qty = Math.max(1, numVal);
+        uploadedStickers[index].qty = Math.max(1, parseInt(val) || 1);
     }
 
     function removeItem(index) {
@@ -571,37 +448,24 @@
         const marginMm = parseFloat(document.getElementById('sheetMargin').value) || 0;
         const gapMm = parseFloat(document.getElementById('stickerGap').value) || 0;
 
-        let sheetW_mm = 297;
-        let sheetH_mm = 420;
-
-        if (sizeOption === 'A4') {
-            sheetW_mm = 210;
-            sheetH_mm = 297;
-        } else if (sizeOption === 'A3Plus') {
-            sheetW_mm = 329;
-            sheetH_mm = 483;
-        }
+        let sheetW_mm = 297, sheetH_mm = 420;
+        if (sizeOption === 'A4') { sheetW_mm = 210; sheetH_mm = 297; }
+        else if (sizeOption === 'A3Plus') { sheetW_mm = 329; sheetH_mm = 483; }
 
         const sheetW = MM_TO_PX(sheetW_mm);
         const sheetH = MM_TO_PX(sheetH_mm);
         const margin = MM_TO_PX(marginMm);
         const gap = MM_TO_PX(gapMm);
 
-        // Canvas Cetak Setup
         const pCanvas = document.getElementById('printCanvas');
-        pCanvas.width = sheetW;
-        pCanvas.height = sheetH;
+        pCanvas.width = sheetW; pCanvas.height = sheetH;
         const pCtx = pCanvas.getContext('2d');
-        pCtx.fillStyle = '#FFFFFF';
-        pCtx.fillRect(0, 0, sheetW, sheetH);
+        pCtx.fillStyle = '#FFFFFF'; pCtx.fillRect(0, 0, sheetW, sheetH);
 
-        // Canvas Cutting Setup
         const cCanvas = document.getElementById('cutCanvas');
-        cCanvas.width = sheetW;
-        cCanvas.height = sheetH;
+        cCanvas.width = sheetW; cCanvas.height = sheetH;
         const cCtx = cCanvas.getContext('2d');
-        cCtx.fillStyle = '#FFFFFF';
-        cCtx.fillRect(0, 0, sheetW, sheetH);
+        cCtx.fillStyle = '#FFFFFF'; cCtx.fillRect(0, 0, sheetW, sheetH);
 
         let curX = margin;
         let curY = margin;
@@ -618,15 +482,10 @@
                     maxRowHeight = 0;
                 }
 
-                if (curY + itemH > sheetH - margin) {
-                    console.warn(`Lembaran ${sizeOption} penuh! Beberapa stiker tidak dapat dimasukkan.`);
-                    break;
-                }
+                if (curY + itemH > sheetH - margin) break;
 
-                // Render gambar asli untuk Print
                 pCtx.drawImage(item.img, curX, curY, itemW, itemH);
 
-                // Render siluet hitam untuk Cutting
                 const tempCanvas = document.createElement('canvas');
                 tempCanvas.width = itemW;
                 tempCanvas.height = itemH;
@@ -637,7 +496,33 @@
                 const data = imgData.data;
                 for (let j = 0; j < data.length; j += 4) {
                     if (data[j + 3] > 20) { 
-                        data[j] = 0;     
-                        data[j + 1] = 0; 
-                        data[j + 2] = 0; 
-      
+                        data[j] = 0; data[j + 1] = 0; data[j + 2] = 0; data[j + 3] = 255; 
+                    }
+                }
+                tempCtx.putImageData(imgData, 0, 0);
+                cCtx.drawImage(tempCanvas, curX, curY);
+
+                curX += itemW + gap;
+                if (itemH > maxRowHeight) maxRowHeight = itemH;
+            }
+        });
+
+        document.getElementById('actionButtons').style.display = 'flex';
+    }
+
+    function downloadCetak() {
+        const link = document.createElement('a');
+        link.download = `File_Cetak_Sticker.png`;
+        link.href = document.getElementById('printCanvas').toDataURL('image/png');
+        link.click();
+    }
+
+    function downloadCutting() {
+        const link = document.createElement('a');
+        link.download = `File_Cutting_Sticker.png`;
+        link.href = document.getElementById('cutCanvas').toDataURL('image/png');
+        link.click();
+    }
+</script>
+</body>
+</html>
