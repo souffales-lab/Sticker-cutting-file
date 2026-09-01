@@ -116,6 +116,17 @@
             outline: none;
         }
 
+        input[type="file"] {
+            width: 100%;
+            padding: 12px;
+            background: var(--card-cream);
+            border: 2px dashed var(--border-dashed);
+            border-radius: var(--radius-lg);
+            font-family: 'Fredoka', cursive;
+            color: var(--brown-dark);
+            cursor: pointer;
+        }
+
         .custom-dimensions {
             display: none;
             margin-top: 12px;
@@ -124,22 +135,6 @@
             border: 1.5px dashed var(--border-dashed);
             border-radius: var(--radius-md);
         }
-
-        .btn-upload-box {
-            border: 2px dashed var(--border-dashed);
-            color: var(--brown-dark);
-            background-color: var(--card-cream);
-            padding: 18px;
-            border-radius: var(--radius-lg);
-            font-family: 'Fredoka', cursive;
-            font-weight: 600;
-            text-align: center;
-            cursor: pointer;
-            display: block;
-            transition: all 0.2s ease;
-        }
-
-        .btn-upload-box:hover { background-color: var(--accent-yellow); }
 
         .sticker-list {
             display: flex;
@@ -258,7 +253,7 @@
         
         <div class="form-group">
             <label>Ukuran Kertas / Area Cetak</label>
-            <select id="sheetSize" onchange="toggleCustomSize()">
+            <select id="sheetSize">
                 <option value="A4">A4 Standard (210 x 297 mm)</option>
                 <option value="A4_Vendor">A4 Area Cetak Vendor (190 x 277 mm)</option>
                 <option value="A3" selected>A3 Standard (297 x 420 mm)</option>
@@ -295,10 +290,8 @@
         </div>
 
         <div class="form-group">
-            <label class="btn-upload-box" for="fileInput">
-                📁 Klik Di Sini Untuk Pilih Gambar (PNG)
-            </label>
-            <input type="file" id="fileInput" multiple accept="image/*" style="display: none;" onchange="handleFileSelect(event)">
+            <label for="fileInput">Pilih File PNG Stiker:</label>
+            <input type="file" id="fileInput" multiple accept="image/*">
         </div>
 
         <div class="section-subtitle">
@@ -310,23 +303,22 @@
             <div class="empty-state">Belum ada gambar yang di-upload.</div>
         </div>
 
-        <button class="btn" onclick="generateLayout()">✨ Generate Multi-Page Layout</button>
+        <button class="btn" id="btnGenerate">✨ Generate Multi-Page Layout</button>
     </div>
 
     <div class="card">
         <div class="card-title">👁️ Preview & Download</div>
 
-        <!-- Pagination -->
         <div id="pagination" class="pagination-container">
-            <button id="prevPageBtn" class="page-btn" onclick="changePage(-1)">◀ Lembar Sebelum</button>
+            <button id="prevPageBtn" class="page-btn">◀ Lembar Sebelum</button>
             <span id="pageIndicator" style="font-family:'Fredoka'; font-weight:600;">Lembar 1 dari 1</span>
-            <button id="nextPageBtn" class="page-btn" onclick="changePage(1)">Lembar Berikut ▶</button>
+            <button id="nextPageBtn" class="page-btn">Lembar Berikut ▶</button>
         </div>
 
         <div id="actionButtons" class="download-bar">
             <div class="download-row">
-                <button class="btn btn-success" onclick="downloadCetakCurrent()">📥 Download Cetak Lembar Ini (PNG)</button>
-                <button class="btn btn-danger" onclick="downloadCuttingCurrent()">✂️ Download Cutting Lembar Ini (SVG)</button>
+                <button class="btn btn-success" id="btnDownloadPNG">📥 Download Cetak Lembar Ini (PNG)</button>
+                <button class="btn btn-danger" id="btnDownloadSVG">✂️ Download Cutting Lembar Ini (SVG)</button>
             </div>
         </div>
 
@@ -336,7 +328,7 @@
                 <canvas id="printCanvas"></canvas>
             </div>
             <div class="preview-box">
-                <h4>Preview Line Cutting (Vector Path)</h4>
+                <h4>Preview Line Cutting (Stroke Vector)</h4>
                 <canvas id="cutCanvas"></canvas>
             </div>
         </div>
@@ -351,44 +343,61 @@
     let currentPageIndex = 0;
     let currentSheetW_mm = 297, currentSheetH_mm = 420;
 
-    function toggleCustomSize() {
-        const select = document.getElementById('sheetSize');
-        document.getElementById('customDimensions').style.display = (select.value === 'custom') ? 'grid' : 'none';
-    }
+    document.addEventListener('DOMContentLoaded', () => {
+        const fileInput = document.getElementById('fileInput');
+        const sheetSizeSelect = document.getElementById('sheetSize');
+        const btnGenerate = document.getElementById('btnGenerate');
+        const prevPageBtn = document.getElementById('prevPageBtn');
+        const nextPageBtn = document.getElementById('nextPageBtn');
+        const btnDownloadPNG = document.getElementById('btnDownloadPNG');
+        const btnDownloadSVG = document.getElementById('btnDownloadSVG');
 
-    function handleFileSelect(e) {
-        const files = Array.from(e.target.files);
-        if (!files.length) return;
-
-        let loaded = 0;
-        files.forEach(file => {
-            const reader = new FileReader();
-            reader.onload = function(evt) {
-                const img = new Image();
-                img.onload = function() {
-                    const ratio = img.height / img.width;
-                    const defaultWidth = 50;
-                    const defaultHeight = Math.round(defaultWidth * ratio);
-
-                    uploadedStickers.push({
-                        id: Date.now() + Math.random(),
-                        img: img,
-                        filename: file.name,
-                        widthMm: defaultWidth,
-                        heightMm: defaultHeight,
-                        aspectRatio: ratio,
-                        qty: 10
-                    });
-
-                    loaded++;
-                    if (loaded === files.length) renderStickerList();
-                };
-                img.src = evt.target.result;
-            };
-            reader.readAsDataURL(file);
+        sheetSizeSelect.addEventListener('change', () => {
+            document.getElementById('customDimensions').style.display = (sheetSizeSelect.value === 'custom') ? 'grid' : 'none';
         });
-        e.target.value = '';
-    }
+
+        fileInput.addEventListener('change', (e) => {
+            const files = Array.from(e.target.files);
+            if (!files.length) return;
+
+            let loaded = 0;
+            files.forEach(file => {
+                const reader = new FileReader();
+                reader.onload = function(evt) {
+                    const img = new Image();
+                    img.onload = function() {
+                        const ratio = img.height / img.width;
+                        const defaultWidth = 50;
+                        const defaultHeight = Math.round(defaultWidth * ratio);
+
+                        uploadedStickers.push({
+                            id: Date.now() + Math.random(),
+                            img: img,
+                            filename: file.name,
+                            widthMm: defaultWidth,
+                            heightMm: defaultHeight,
+                            aspectRatio: ratio,
+                            qty: 10
+                        });
+
+                        loaded++;
+                        if (loaded === files.length) {
+                            renderStickerList();
+                        }
+                    };
+                    img.src = evt.target.result;
+                };
+                reader.readAsDataURL(file);
+            });
+            fileInput.value = '';
+        });
+
+        btnGenerate.addEventListener('click', generateLayout);
+        prevPageBtn.addEventListener('click', () => changePage(-1));
+        nextPageBtn.addEventListener('click', () => changePage(1));
+        btnDownloadPNG.addEventListener('click', downloadCetakCurrent);
+        btnDownloadSVG.addEventListener('click', downloadCuttingCurrent);
+    });
 
     function renderStickerList() {
         const container = document.getElementById('stickerList');
@@ -404,27 +413,56 @@
             const div = document.createElement('div');
             div.className = 'sticker-item';
             div.innerHTML = `
-                <button class="btn-delete" title="Hapus" onclick="removeItem(${index})">×</button>
+                <button class="btn-delete" title="Hapus" data-index="${index}">×</button>
                 <img src="${item.img.src}" class="sticker-thumb">
                 <div class="sticker-details">
                     <div class="sticker-filename">${item.filename}</div>
                     <div class="sticker-inputs">
                         <div>
                             <label>L (mm)</label>
-                            <input type="number" value="${item.widthMm}" oninput="updateItemSize(${index}, 'width', this.value)">
+                            <input type="number" class="input-w" value="${item.widthMm}" data-index="${index}">
                         </div>
                         <div>
                             <label>T (mm)</label>
-                            <input type="number" value="${item.heightMm}" oninput="updateItemSize(${index}, 'height', this.value)">
+                            <input type="number" class="input-h" value="${item.heightMm}" data-index="${index}">
                         </div>
                         <div>
                             <label>Qty</label>
-                            <input type="number" value="${item.qty}" min="1" onchange="updateQty(${index}, this.value)">
+                            <input type="number" class="input-q" value="${item.qty}" min="1" data-index="${index}">
                         </div>
                     </div>
                 </div>
             `;
             container.appendChild(div);
+        });
+
+        container.querySelectorAll('.btn-delete').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const idx = parseInt(e.target.getAttribute('data-index'));
+                uploadedStickers.splice(idx, 1);
+                renderStickerList();
+            });
+        });
+
+        container.querySelectorAll('.input-w').forEach(inp => {
+            inp.addEventListener('input', (e) => {
+                const idx = parseInt(e.target.getAttribute('data-index'));
+                updateItemSize(idx, 'width', e.target.value);
+            });
+        });
+
+        container.querySelectorAll('.input-h').forEach(inp => {
+            inp.addEventListener('input', (e) => {
+                const idx = parseInt(e.target.getAttribute('data-index'));
+                updateItemSize(idx, 'height', e.target.value);
+            });
+        });
+
+        container.querySelectorAll('.input-q').forEach(inp => {
+            inp.addEventListener('change', (e) => {
+                const idx = parseInt(e.target.getAttribute('data-index'));
+                uploadedStickers[idx].qty = Math.max(1, parseInt(e.target.value) || 1);
+            });
         });
     }
 
@@ -443,19 +481,9 @@
 
         const items = document.querySelectorAll('.sticker-item');
         if (items[index]) {
-            const inputs = items[index].querySelectorAll('.sticker-inputs input');
-            inputs[0].value = item.widthMm;
-            inputs[1].value = item.heightMm;
+            items[index].querySelector('.input-w').value = item.widthMm;
+            items[index].querySelector('.input-h').value = item.heightMm;
         }
-    }
-
-    function updateQty(index, val) {
-        uploadedStickers[index].qty = Math.max(1, parseInt(val) || 1);
-    }
-
-    function removeItem(index) {
-        uploadedStickers.splice(index, 1);
-        renderStickerList();
     }
 
     function drawCutOutline(cCtx, x, y, w, h) {
@@ -536,4 +564,69 @@
                     maxRowHeight = 0;
                 }
 
-                currentPage.printCtx.drawImag
+                currentPage.printCtx.drawImage(item.img, curX, curY, itemW, itemH);
+                drawCutOutline(currentPage.cutCtx, curX, curY, itemW, itemH);
+
+                const posX_mm = curX * 25.4 / DPI;
+                const posY_mm = curY * 25.4 / DPI;
+                const rectSvg = `<rect x="${posX_mm.toFixed(2)}" y="${posY_mm.toFixed(2)}" width="${item.widthMm}" height="${item.heightMm}" fill="none" stroke="#FF0000" stroke-width="0.25" />`;
+                currentPage.svgRects.push(rectSvg);
+
+                curX += itemW + gap;
+                if (itemH > maxRowHeight) maxRowHeight = itemH;
+            }
+        });
+
+        currentPageIndex = 0;
+        renderCurrentPage();
+
+        document.getElementById('pagination').style.display = 'flex';
+        document.getElementById('actionButtons').style.display = 'flex';
+    }
+
+    function renderCurrentPage() {
+        const pCanvas = document.getElementById('printCanvas');
+        const cCanvas = document.getElementById('cutCanvas');
+        const pageData = pagesData[currentPageIndex];
+
+        pCanvas.width = pageData.printCanvas.width;
+        pCanvas.height = pageData.printCanvas.height;
+        pCanvas.getContext('2d').drawImage(pageData.printCanvas, 0, 0);
+
+        cCanvas.width = pageData.cutCanvas.width;
+        cCanvas.height = pageData.cutCanvas.height;
+        cCanvas.getContext('2d').drawImage(pageData.cutCanvas, 0, 0);
+
+        document.getElementById('pageIndicator').innerText = `Lembar ${currentPageIndex + 1} dari ${pagesData.length}`;
+        document.getElementById('prevPageBtn').disabled = (currentPageIndex === 0);
+        document.getElementById('nextPageBtn').disabled = (currentPageIndex === pagesData.length - 1);
+    }
+
+    function changePage(delta) {
+        currentPageIndex += delta;
+        renderCurrentPage();
+    }
+
+    function downloadCetakCurrent() {
+        const link = document.createElement('a');
+        link.download = `Cetak_Lembar_${currentPageIndex + 1}.png`;
+        link.href = document.getElementById('printCanvas').toDataURL('image/png');
+        link.click();
+    }
+
+    function downloadCuttingCurrent() {
+        const svgStr = `<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="${currentSheetW_mm}mm" height="${currentSheetH_mm}mm" viewBox="0 0 ${currentSheetW_mm} ${currentSheetH_mm}">
+    <g id="CutlineLayer">
+        ${pagesData[currentPageIndex].svgRects.join('\n        ')}
+    </g>
+</svg>`;
+        const blob = new Blob([svgStr], { type: 'image/svg+xml;charset=utf-8' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = `Cutting_Lembar_${currentPageIndex + 1}.svg`;
+        link.click();
+    }
+</script>
+</body>
+</html>
