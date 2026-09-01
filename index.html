@@ -366,7 +366,6 @@
                 reader.onload = function(evt) {
                     const img = new Image();
                     img.onload = function() {
-                        const bounds = getVisibleBounds(img);
                         const ratio = img.height / img.width;
                         const defaultWidth = 50;
                         const defaultHeight = Math.round(defaultWidth * ratio);
@@ -374,7 +373,6 @@
                         uploadedStickers.push({
                             id: Date.now() + Math.random(),
                             img: img,
-                            bounds: bounds, // Menyimpan batas area gambar asli non-transparan
                             filename: file.name,
                             widthMm: defaultWidth,
                             heightMm: defaultHeight,
@@ -400,40 +398,6 @@
         btnDownloadPNG.addEventListener('click', downloadCetakCurrent);
         btnDownloadSVG.addEventListener('click', downloadCuttingCurrent);
     });
-
-    // Fungsi untuk mendeteksi batas transparan (alpha > 10) agar cutline pas melingkar/mengikuti bentuk karakter
-    function getVisibleBounds(img) {
-        const canvas = document.createElement('canvas');
-        canvas.width = img.width;
-        canvas.height = img.height;
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(img, 0, 0);
-        const data = ctx.getImageData(0, 0, img.width, img.height).data;
-
-        let minX = img.width, minY = img.height, maxX = 0, maxY = 0;
-        let found = false;
-
-        for (let y = 0; y < img.height; y++) {
-            for (let x = 0; x < img.width; x++) {
-                const alpha = data[(y * img.width + x) * 4 + 3];
-                if (alpha > 10) { // Piksel tidak transparan
-                    if (x < minX) minX = x;
-                    if (x > maxX) maxX = x;
-                    if (y < minY) minY = y;
-                    if (y > maxY) maxY = y;
-                    found = true;
-                }
-            }
-        }
-
-        if (!found) return { x: 0, y: 0, w: img.width, h: img.height };
-        return {
-            x: minX,
-            y: minY,
-            w: (maxX - minX + 1),
-            h: (maxY - minY + 1)
-        };
-    }
 
     function renderStickerList() {
         const container = document.getElementById('stickerList');
@@ -522,7 +486,147 @@
         }
     }
 
-    // Menggambar cutline presisi pas di sekeliling bentuk gambar (mengabaikan background transparan)
-    function drawContourCut(cCtx, item, drawX, drawY, itemW, itemH) {
-        const scaleX = itemW / item.img.width;
-   
+    function drawCutOutline(cCtx, x, y, w, h) {
+        cCtx.strokeStyle = '#FF0000';
+        cCtx.lineWidth = 3;
+        cCtx.strokeRect(x, y, w, h);
+    }
+
+    function createNewPage(sheetW, sheetH) {
+        const pCanvas = document.createElement('canvas');
+        pCanvas.width = sheetW; pCanvas.height = sheetH;
+        const pCtx = pCanvas.getContext('2d');
+        pCtx.fillStyle = '#FFFFFF'; pCtx.fillRect(0, 0, sheetW, sheetH);
+
+        const cCanvas = document.createElement('canvas');
+        cCanvas.width = sheetW; cCanvas.height = sheetH;
+        const cCtx = cCanvas.getContext('2d');
+        cCtx.fillStyle = '#FFFFFF'; cCtx.fillRect(0, 0, sheetW, sheetH);
+
+        return {
+            printCanvas: pCanvas,
+            printCtx: pCtx,
+            cutCanvas: cCanvas,
+            cutCtx: cCtx,
+            svgRects: []
+        };
+    }
+
+    function generateLayout() {
+        if (uploadedStickers.length === 0) {
+            alert("Upload minimal 1 gambar stiker dulu ya!");
+            return;
+        }
+
+        const sizeOption = document.getElementById('sheetSize').value;
+        const marginMm = parseFloat(document.getElementById('sheetMargin').value) || 0;
+        const gapMm = parseFloat(document.getElementById('stickerGap').value) || 0;
+
+        if (sizeOption === 'A4') { currentSheetW_mm = 210; currentSheetH_mm = 297; }
+        else if (sizeOption === 'A4_Vendor') { currentSheetW_mm = 190; currentSheetH_mm = 277; }
+        else if (sizeOption === 'A3') { currentSheetW_mm = 297; currentSheetH_mm = 420; }
+        else if (sizeOption === 'A3Plus') { currentSheetW_mm = 329; currentSheetH_mm = 483; }
+        else if (sizeOption === 'A3Plus_Vendor') { currentSheetW_mm = 300; currentSheetH_mm = 450; }
+        else if (sizeOption === 'custom') {
+            currentSheetW_mm = parseFloat(document.getElementById('customWidth').value) || 200;
+            currentSheetH_mm = parseFloat(document.getElementById('customHeight').value) || 300;
+        }
+
+        const sheetW = MM_TO_PX(currentSheetW_mm);
+        const sheetH = MM_TO_PX(currentSheetH_mm);
+        const margin = MM_TO_PX(marginMm);
+        const gap = MM_TO_PX(gapMm);
+
+        pagesData = [];
+        let currentPage = createNewPage(sheetW, sheetH);
+        pagesData.push(currentPage);
+
+        let curX = margin;
+        let curY = margin;
+        let maxRowHeight = 0;
+
+        uploadedStickers.forEach(item => {
+            const itemW = MM_TO_PX(item.widthMm);
+            const itemH = MM_TO_PX(item.heightMm);
+
+            for (let i = 0; i < item.qty; i++) {
+                if (curX + itemW > sheetW - margin) {
+                    curX = margin;
+                    curY += maxRowHeight + gap;
+                    maxRowHeight = 0;
+                }
+
+                if (curY + itemH > sheetH - margin) {
+                    currentPage = createNewPage(sheetW, sheetH);
+                    pagesData.push(currentPage);
+                    curX = margin;
+                    curY = margin;
+                    maxRowHeight = 0;
+                }
+
+                currentPage.printCtx.drawImage(item.img, curX, curY, itemW, itemH);
+                drawCutOutline(currentPage.cutCtx, curX, curY, itemW, itemH);
+
+                const posX_mm = curX * 25.4 / DPI;
+                const posY_mm = curY * 25.4 / DPI;
+                const rectSvg = `<rect x="${posX_mm.toFixed(2)}" y="${posY_mm.toFixed(2)}" width="${item.widthMm}" height="${item.heightMm}" fill="none" stroke="#FF0000" stroke-width="0.25" />`;
+                currentPage.svgRects.push(rectSvg);
+
+                curX += itemW + gap;
+                if (itemH > maxRowHeight) maxRowHeight = itemH;
+            }
+        });
+
+        currentPageIndex = 0;
+        renderCurrentPage();
+
+        document.getElementById('pagination').style.display = 'flex';
+        document.getElementById('actionButtons').style.display = 'flex';
+    }
+
+    function renderCurrentPage() {
+        const pCanvas = document.getElementById('printCanvas');
+        const cCanvas = document.getElementById('cutCanvas');
+        const pageData = pagesData[currentPageIndex];
+
+        pCanvas.width = pageData.printCanvas.width;
+        pCanvas.height = pageData.printCanvas.height;
+        pCanvas.getContext('2d').drawImage(pageData.printCanvas, 0, 0);
+
+        cCanvas.width = pageData.cutCanvas.width;
+        cCanvas.height = pageData.cutCanvas.height;
+        cCanvas.getContext('2d').drawImage(pageData.cutCanvas, 0, 0);
+
+        document.getElementById('pageIndicator').innerText = `Lembar ${currentPageIndex + 1} dari ${pagesData.length}`;
+        document.getElementById('prevPageBtn').disabled = (currentPageIndex === 0);
+        document.getElementById('nextPageBtn').disabled = (currentPageIndex === pagesData.length - 1);
+    }
+
+    function changePage(delta) {
+        currentPageIndex += delta;
+        renderCurrentPage();
+    }
+
+    function downloadCetakCurrent() {
+        const link = document.createElement('a');
+        link.download = `Cetak_Lembar_${currentPageIndex + 1}.png`;
+        link.href = document.getElementById('printCanvas').toDataURL('image/png');
+        link.click();
+    }
+
+    function downloadCuttingCurrent() {
+        const svgStr = `<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="${currentSheetW_mm}mm" height="${currentSheetH_mm}mm" viewBox="0 0 ${currentSheetW_mm} ${currentSheetH_mm}">
+    <g id="CutlineLayer">
+        ${pagesData[currentPageIndex].svgRects.join('\n        ')}
+    </g>
+</svg>`;
+        const blob = new Blob([svgStr], { type: 'image/svg+xml;charset=utf-8' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = `Cutting_Lembar_${currentPageIndex + 1}.svg`;
+        link.click();
+    }
+</script>
+</body>
+</html>
