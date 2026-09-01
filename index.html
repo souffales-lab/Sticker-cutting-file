@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sticker Sheet & Cutline Studio ✨</title>
-    <!-- Google Fonts untuk font hangat & imut khas Souffales -->
+    <!-- Google Fonts khas Souffales -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Quicksand:wght@500;600;700&display=swap" rel="stylesheet">
@@ -124,6 +124,15 @@
         input[type="number"]:focus, select:focus {
             border-color: var(--brown-btn);
             background-color: #FFFFFF;
+        }
+
+        .custom-dimensions {
+            display: none;
+            margin-top: 12px;
+            padding: 12px;
+            background: var(--card-cream);
+            border: 1.5px dashed var(--border-dashed);
+            border-radius: var(--radius-md);
         }
 
         .upload-btn-wrapper {
@@ -260,7 +269,7 @@
 
 <div class="header-title">
     <h1>✂️ Sticker Layout Studio ✨</h1>
-    <p>Susun stiker otomatis ke sheet A4/A3 lengkap dengan file cetak dan cutline</p>
+    <p>Susun stiker otomatis ke sheet standar/custom dengan auto-bleed & ekspor vector SVG cutting line</p>
 </div>
 
 <div class="container">
@@ -268,15 +277,28 @@
         <div class="card-title">⚙️ Pengaturan Lembar</div>
         
         <div class="form-group">
-            <label>Ukuran Kertas</label>
-            <select id="sheetSize">
+            <label>Ukuran Kertas / Area Cetak</label>
+            <select id="sheetSize" onchange="toggleCustomSize()">
                 <option value="A4">A4 (210 x 297 mm)</option>
                 <option value="A3" selected>A3 (297 x 420 mm)</option>
-                <option value="A3Plus">A3+ (329 x 483 mm)</option>
+                <option value="A3Plus">A3+ Standard (329 x 483 mm)</option>
+                <option value="A3Plus_Vendor">A3+ Area Cetak Vendor (300 x 450 mm)</option>
+                <option value="custom">✨ Custom Size (Input Sendiri)</option>
             </select>
         </div>
 
-        <div class="form-row">
+        <div id="customDimensions" class="custom-dimensions form-row">
+            <div class="form-group" style="margin-bottom:0;">
+                <label>Lebar (mm)</label>
+                <input type="number" id="customWidth" value="310" placeholder="Lebar mm">
+            </div>
+            <div class="form-group" style="margin-bottom:0;">
+                <label>Tinggi (mm)</label>
+                <input type="number" id="customHeight" value="460" placeholder="Tinggi mm">
+            </div>
+        </div>
+
+        <div class="form-row" style="margin-top: 12px;">
             <div class="form-group">
                 <label>Margin (mm)</label>
                 <input type="number" id="sheetMargin" value="10">
@@ -287,13 +309,20 @@
             </div>
         </div>
 
+        <div class="form-row">
+            <div class="form-group">
+                <label>Bleed Stiker (mm)</label>
+                <input type="number" id="bleedAmount" value="2" min="0" max="5">
+            </div>
+        </div>
+
         <div class="section-subtitle">
             <span>🖼️ Upload Stiker</span>
         </div>
 
         <div class="form-group">
             <div class="upload-btn-wrapper">
-                <button class="btn-upload">📁 Pilih File Gambar (PNG)</button>
+                <button class="btn-upload">📁 Pilih Beberapa File Gambar (PNG)</button>
                 <input type="file" id="fileInput" multiple accept="image/*">
             </div>
         </div>
@@ -314,17 +343,17 @@
         <div class="card-title">👁️ Preview & Download</div>
 
         <div id="actionButtons" class="download-bar">
-            <button class="btn btn-success" onclick="downloadCetak()">📥 Download Cetak</button>
-            <button class="btn btn-danger" onclick="downloadCutting()">✂️ Download Cutting</button>
+            <button class="btn btn-success" onclick="downloadCetak()">📥 Download Cetak (PNG)</button>
+            <button class="btn btn-danger" onclick="downloadCuttingSVG()">✂️ Download Cutting (Vector SVG)</button>
         </div>
 
         <div class="preview-grid">
             <div class="preview-box">
-                <h4>Preview Hasil Cetak</h4>
+                <h4>Preview Hasil Cetak (Auto Bleed)</h4>
                 <canvas id="printCanvas"></canvas>
             </div>
             <div class="preview-box">
-                <h4>Preview Line Cutting</h4>
+                <h4>Preview Line Cutting (Vector Path)</h4>
                 <canvas id="cutCanvas"></canvas>
             </div>
         </div>
@@ -335,12 +364,26 @@
     const DPI = 300; 
     const MM_TO_PX = (mm) => Math.round((mm * DPI) / 25.4);
     let uploadedStickers = [];
+    let svgDataContent = "";
+    let currentSheetW_mm = 297, currentSheetH_mm = 420;
+
+    function toggleCustomSize() {
+        const select = document.getElementById('sheetSize');
+        const customDiv = document.getElementById('customDimensions');
+        if (select.value === 'custom') {
+            customDiv.style.display = 'grid';
+        } else {
+            customDiv.style.display = 'none';
+        }
+    }
 
     document.getElementById('fileInput').addEventListener('change', function(e) {
-        const files = e.target.files;
-        if (!files || !files.length) return;
+        const files = Array.from(e.target.files);
+        if (!files.length) return;
 
-        Array.from(files).forEach(file => {
+        let loadedCount = 0;
+
+        files.forEach(file => {
             const reader = new FileReader();
             reader.onload = function(event) {
                 const img = new Image();
@@ -358,12 +401,17 @@
                         aspectRatio: ratio,
                         qty: 10
                     });
-                    renderStickerList();
+
+                    loadedCount++;
+                    if (loadedCount === files.length) {
+                        renderStickerList();
+                    }
                 };
                 img.src = event.target.result;
             };
             reader.readAsDataURL(file);
         });
+        
         this.value = '';
     });
 
@@ -447,15 +495,26 @@
         const sizeOption = document.getElementById('sheetSize').value;
         const marginMm = parseFloat(document.getElementById('sheetMargin').value) || 0;
         const gapMm = parseFloat(document.getElementById('stickerGap').value) || 0;
+        const bleedMm = parseFloat(document.getElementById('bleedAmount').value) || 0;
 
-        let sheetW_mm = 297, sheetH_mm = 420;
-        if (sizeOption === 'A4') { sheetW_mm = 210; sheetH_mm = 297; }
-        else if (sizeOption === 'A3Plus') { sheetW_mm = 329; sheetH_mm = 483; }
+        if (sizeOption === 'A4') { 
+            currentSheetW_mm = 210; currentSheetH_mm = 297; 
+        } else if (sizeOption === 'A3') { 
+            currentSheetW_mm = 297; currentSheetH_mm = 420; 
+        } else if (sizeOption === 'A3Plus') { 
+            currentSheetW_mm = 329; currentSheetH_mm = 483; 
+        } else if (sizeOption === 'A3Plus_Vendor') { 
+            currentSheetW_mm = 300; currentSheetH_mm = 450; 
+        } else if (sizeOption === 'custom') {
+            currentSheetW_mm = parseFloat(document.getElementById('customWidth').value) || 300;
+            currentSheetH_mm = parseFloat(document.getElementById('customHeight').value) || 450;
+        }
 
-        const sheetW = MM_TO_PX(sheetW_mm);
-        const sheetH = MM_TO_PX(sheetH_mm);
+        const sheetW = MM_TO_PX(currentSheetW_mm);
+        const sheetH = MM_TO_PX(currentSheetH_mm);
         const margin = MM_TO_PX(marginMm);
         const gap = MM_TO_PX(gapMm);
+        const bleedPx = MM_TO_PX(bleedMm);
 
         const pCanvas = document.getElementById('printCanvas');
         pCanvas.width = sheetW; pCanvas.height = sheetH;
@@ -471,58 +530,14 @@
         let curY = margin;
         let maxRowHeight = 0;
 
+        let svgPaths = [];
+
         uploadedStickers.forEach(item => {
             const itemW = MM_TO_PX(item.widthMm);
             const itemH = MM_TO_PX(item.heightMm);
 
-            for (let i = 0; i < item.qty; i++) {
-                if (curX + itemW > sheetW - margin) {
-                    curX = margin;
-                    curY += maxRowHeight + gap;
-                    maxRowHeight = 0;
-                }
-
-                if (curY + itemH > sheetH - margin) break;
-
-                pCtx.drawImage(item.img, curX, curY, itemW, itemH);
-
-                const tempCanvas = document.createElement('canvas');
-                tempCanvas.width = itemW;
-                tempCanvas.height = itemH;
-                const tempCtx = tempCanvas.getContext('2d');
-                tempCtx.drawImage(item.img, 0, 0, itemW, itemH);
-                
-                const imgData = tempCtx.getImageData(0, 0, itemW, itemH);
-                const data = imgData.data;
-                for (let j = 0; j < data.length; j += 4) {
-                    if (data[j + 3] > 20) { 
-                        data[j] = 0; data[j + 1] = 0; data[j + 2] = 0; data[j + 3] = 255; 
-                    }
-                }
-                tempCtx.putImageData(imgData, 0, 0);
-                cCtx.drawImage(tempCanvas, curX, curY);
-
-                curX += itemW + gap;
-                if (itemH > maxRowHeight) maxRowHeight = itemH;
-            }
-        });
-
-        document.getElementById('actionButtons').style.display = 'flex';
-    }
-
-    function downloadCetak() {
-        const link = document.createElement('a');
-        link.download = `File_Cetak_Sticker.png`;
-        link.href = document.getElementById('printCanvas').toDataURL('image/png');
-        link.click();
-    }
-
-    function downloadCutting() {
-        const link = document.createElement('a');
-        link.download = `File_Cutting_Sticker.png`;
-        link.href = document.getElementById('cutCanvas').toDataURL('image/png');
-        link.click();
-    }
-</script>
-</body>
-</html>
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = itemW;
+            tempCanvas.height = itemH;
+            const tempCtx = tempCanvas.getContext('2d');
+      
