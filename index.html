@@ -3,141 +3,388 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sticker Sheet & Cutline Generator</title>
+    <title>Sticker Sheet & Cutline Studio Pro</title>
     <style>
         :root {
-            --primary: #4A90E2;
-            --bg: #F4F7F9;
+            --primary: #4F46E5;
+            --primary-hover: #4338CA;
+            --secondary: #64748B;
+            --bg: #F8FAFC;
             --card-bg: #FFFFFF;
-            --text: #333333;
+            --text-main: #0F172A;
+            --text-muted: #64748B;
+            --border: #E2E8F0;
+            --danger: #EF4444;
+            --danger-hover: #DC2626;
+            --success: #10B981;
+            --shadow-sm: 0 1px 3px rgba(0,0,0,0.05);
+            --shadow-md: 0 4px 12px -2px rgba(0,0,0,0.08);
+            --radius-lg: 16px;
+            --radius-md: 10px;
+            --radius-sm: 6px;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
         }
 
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             background-color: var(--bg);
-            color: var(--text);
-            margin: 0;
-            padding: 20px;
+            color: var(--text-main);
+            line-height: 1.5;
+            padding: 24px 16px;
+        }
+
+        .header-title {
+            text-align: center;
+            margin-bottom: 24px;
+        }
+
+        .header-title h1 {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--text-main);
+            letter-spacing: -0.02em;
+        }
+
+        .header-title p {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+            margin-top: 4px;
         }
 
         .container {
-            max-width: 1200px;
+            max-width: 1280px;
             margin: 0 auto;
             display: grid;
-            grid-template-columns: 380px 1fr;
-            gap: 20px;
+            grid-template-columns: 400px 1fr;
+            gap: 24px;
+            align-items: start;
         }
 
-        .sidebar {
+        @media (max-width: 900px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .card {
             background: var(--card-bg);
-            padding: 20px;
-            border-radius: 12px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-            max-height: 90vh;
-            overflow-y: auto;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 24px;
+            box-shadow: var(--shadow-md);
         }
 
-        .preview-area {
-            background: var(--card-bg);
-            padding: 20px;
-            border-radius: 12px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-            text-align: center;
+        .card-title {
+            font-size: 1.15rem;
+            font-weight: 700;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--text-main);
         }
 
-        h2, h3 { color: var(--primary); margin-top: 0; }
+        .section-subtitle {
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: var(--text-main);
+            margin: 20px 0 12px 0;
+            padding-bottom: 6px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
 
         .form-group {
-            margin-bottom: 15px;
+            margin-bottom: 16px;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
         }
 
         label {
             display: block;
-            font-weight: bold;
-            font-size: 0.85em;
-            margin-bottom: 5px;
+            font-weight: 600;
+            font-size: 0.825rem;
+            margin-bottom: 6px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
         }
 
-        input[type="number"], select, input[type="file"] {
+        input[type="number"], select {
             width: 100%;
-            padding: 8px 10px;
-            border-radius: 6px;
-            border: 1px solid #CCC;
-            box-sizing: border-box;
+            padding: 10px 12px;
+            border-radius: var(--radius-md);
+            border: 1px solid var(--border);
+            background-color: #F8FAFC;
+            font-size: 0.9rem;
+            color: var(--text-main);
+            font-weight: 500;
+            transition: all 0.2s ease;
+            outline: none;
+        }
+
+        input[type="number"]:focus, select:focus {
+            border-color: var(--primary);
+            background-color: #FFFFFF;
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+        }
+
+        .file-upload-box {
+            border: 2px dashed var(--border);
+            border-radius: var(--radius-md);
+            padding: 20px;
+            text-align: center;
+            background: #FAFAFA;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            position: relative;
+        }
+
+        .file-upload-box:hover {
+            border-color: var(--primary);
+            background: #F5F3FF;
+        }
+
+        .file-upload-box input[type="file"] {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            opacity: 0;
+            cursor: pointer;
+        }
+
+        .file-upload-label {
+            font-size: 0.875rem;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        .file-upload-label strong {
+            color: var(--primary);
+        }
+
+        .sticker-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            max-height: 400px;
+            overflow-y: auto;
+            padding-right: 4px;
         }
 
         .sticker-item {
-            background: #F8F9FA;
-            border: 1px solid #E0E0E0;
-            border-radius: 8px;
-            padding: 10px;
-            margin-bottom: 10px;
-            display: grid;
-            grid-template-columns: 50px 1fr;
-            gap: 10px;
+            position: relative;
+            background: #F8FAFC;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            padding: 12px;
+            display: flex;
+            gap: 12px;
             align-items: center;
+            transition: all 0.2s ease;
         }
 
-        .sticker-item img {
-            width: 50px;
-            height: 50px;
+        .sticker-item:hover {
+            border-color: #CBD5E1;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .sticker-thumb-wrapper {
+            width: 60px;
+            height: 60px;
+            background: #FFFFFF;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            flex-shrink: 0;
+            background-image: linear-gradient(45deg, #e2e8f0 25%, transparent 25%), linear-gradient(-45deg, #e2e8f0 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #e2e8f0 75%), linear-gradient(-45deg, transparent 75%, #e2e8f0 75%);
+            background-size: 10px 10px;
+            background-position: 0 0, 0 5px, 5px -5px, -5px 0px;
+        }
+
+        .sticker-thumb-wrapper img {
+            max-width: 100%;
+            max-height: 100%;
             object-fit: contain;
-            background: #EEE;
-            border-radius: 4px;
         }
 
-        .item-controls {
+        .sticker-details {
+            flex-grow: 1;
+        }
+
+        .sticker-filename {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--text-main);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 200px;
+            margin-bottom: 6px;
+        }
+
+        .sticker-inputs {
             display: grid;
             grid-template-columns: 1fr 1fr 1fr;
-            gap: 5px;
+            gap: 6px;
         }
 
-        .item-controls label {
-            font-size: 0.7em;
-            margin: 0;
+        .sticker-inputs label {
+            font-size: 0.68rem;
+            margin-bottom: 2px;
+        }
+
+        .sticker-inputs input {
+            padding: 6px 8px;
+            font-size: 0.8rem;
+        }
+
+        .btn-delete {
+            position: absolute;
+            top: 6px;
+            right: 6px;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            background: #F1F5F9;
+            color: #64748B;
+            border: none;
+            font-size: 13px;
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+            line-height: 1;
+        }
+
+        .btn-delete:hover {
+            background: var(--danger);
+            color: #FFFFFF;
         }
 
         .btn {
             background: var(--primary);
-            color: white;
+            color: #FFFFFF;
             border: none;
-            padding: 10px 15px;
-            border-radius: 6px;
-            font-weight: bold;
+            padding: 12px 20px;
+            border-radius: var(--radius-md);
+            font-weight: 600;
+            font-size: 0.95rem;
             cursor: pointer;
             width: 100%;
-            margin-top: 10px;
+            margin-top: 16px;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 4px rgba(79, 70, 229, 0.2);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
         }
 
-        .btn:hover { opacity: 0.9; }
-        .btn-success { background: #2ECC71; }
+        .btn:hover {
+            background: var(--primary-hover);
+            transform: translateY(-1px);
+        }
+
+        .btn-success {
+            background: var(--success);
+            box-shadow: 0 2px 4px rgba(16, 185, 129, 0.2);
+        }
+        .btn-success:hover { background: #059669; }
+
+        .btn-danger {
+            background: var(--danger);
+            box-shadow: 0 2px 4px rgba(239, 68, 68, 0.2);
+        }
+        .btn-danger:hover { background: var(--danger-hover); }
+
+        .download-bar {
+            display: none;
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+
+        .download-bar .btn {
+            margin-top: 0;
+            flex: 1;
+        }
+
+        .preview-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        @media (max-width: 700px) {
+            .preview-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .preview-box {
+            background: #F8FAFC;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            padding: 16px;
+            text-align: center;
+        }
+
+        .preview-box h4 {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+        }
 
         canvas {
-            border: 1px solid #DDD;
-            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
             max-width: 100%;
             height: auto;
             background-color: white;
+            box-shadow: var(--shadow-sm);
         }
 
-        .canvas-container {
-            margin-top: 15px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 15px;
+        .empty-state {
+            color: var(--text-muted);
+            font-size: 0.875rem;
+            font-style: italic;
+            text-align: center;
+            padding: 20px 0;
         }
     </style>
 </head>
 <body>
 
+<div class="header-title">
+    <h1>✂️ Sticker Layout & Cutline Studio</h1>
+    <p>Susun stiker otomatis ke sheet A4/A3 lengkap dengan file cetak dan pola potong (cutline)</p>
+</div>
+
 <div class="container">
-    <!-- PANEL PENGATURAN -->
-    <div class="sidebar">
-        <h2>✂️ Sticker Layout & Cut</h2>
+    <!-- PANEL SETUP -->
+    <div class="card">
+        <div class="card-title">⚙️ Pengaturan Lembar</div>
         
         <div class="form-group">
-            <label>Ukuran Kertas (Sheet Size):</label>
+            <label>Ukuran Kertas (Sheet Size)</label>
             <select id="sheetSize">
                 <option value="A4">A4 (210 x 297 mm)</option>
                 <option value="A3" selected>A3 (297 x 420 mm)</option>
@@ -145,44 +392,58 @@
             </select>
         </div>
 
-        <div class="form-group" style="display: flex; gap: 10px;">
-            <div>
-                <label>Margin (mm):</label>
+        <div class="form-row">
+            <div class="form-group">
+                <label>Margin (mm)</label>
                 <input type="number" id="sheetMargin" value="10" min="0">
             </div>
-            <div>
-                <label>Jarak / Gap (mm):</label>
+            <div class="form-group">
+                <label>Jarak / Gap (mm)</label>
                 <input type="number" id="stickerGap" value="3" min="0">
             </div>
         </div>
 
-        <div class="form-group">
-            <label>Upload Desain Stiker (PNG Transparan):</label>
-            <input type="file" id="fileInput" multiple accept="image/png">
+        <div class="section-subtitle">
+            <span>🖼️ Upload Stiker</span>
         </div>
 
-        <hr style="border: 0.5px solid #EEE; margin: 20px 0;">
-        <h3>Daftar Desain</h3>
-        <div id="stickerList"><i>Belum ada gambar yang di-upload.</i></div>
+        <div class="form-group">
+            <div class="file-upload-box">
+                <input type="file" id="fileInput" multiple accept="image/png">
+                <div class="file-upload-label">
+                    📁 <strong>Klik atau geser file PNG</strong> transparan ke sini
+                </div>
+            </div>
+        </div>
 
-        <button class="btn" onclick="generateLayout()">🔄 Generate Layout</button>
+        <div class="section-subtitle">
+            <span>📋 Daftar Desain</span>
+            <span id="itemCount" style="font-size:0.75rem; color:var(--text-muted); font-weight:normal;">0 item</span>
+        </div>
+
+        <div id="stickerList" class="sticker-list">
+            <div class="empty-state">Belum ada gambar yang di-upload.</div>
+        </div>
+
+        <button class="btn" onclick="generateLayout()">🔄 Generate Layout Sheet</button>
     </div>
 
-    <!-- AREA PREVIEW & DOWNLOAD -->
-    <div class="preview-area">
-        <h2>Hasil Layout</h2>
-        <div id="actionButtons" style="display:none; gap: 10px; justify-content: center; margin-bottom: 15px;">
-            <button class="btn btn-success" style="width: auto;" onclick="downloadCetak()">📥 Download File Cetak (Print)</button>
-            <button class="btn" style="width: auto; background: #E74C3C;" onclick="downloadCutting()">✂️ Download File Cutting (Cutline)</button>
+    <!-- PANEL PREVIEW -->
+    <div class="card">
+        <div class="card-title">👁️ Preview & Download</div>
+
+        <div id="actionButtons" class="download-bar">
+            <button class="btn btn-success" onclick="downloadCetak()">📥 Download File Cetak</button>
+            <button class="btn btn-danger" onclick="downloadCutting()">✂️ Download File Cutting</button>
         </div>
 
-        <div class="canvas-container">
-            <div>
-                <h4 id="canvasTitlePrint">Preview File Cetak</h4>
+        <div class="preview-grid">
+            <div class="preview-box">
+                <h4>Preview Hasil Cetak</h4>
                 <canvas id="printCanvas"></canvas>
             </div>
-            <div>
-                <h4 id="canvasTitleCut">Preview Line Cutting (Siluet Potong)</h4>
+            <div class="preview-box">
+                <h4>Preview Line Cutting</h4>
                 <canvas id="cutCanvas"></canvas>
             </div>
         </div>
@@ -197,17 +458,24 @@
 
     document.getElementById('fileInput').addEventListener('change', function(e) {
         const files = e.target.files;
-        for (let file of files) {
+        if (!files.length) return;
+
+        Array.from(files).forEach(file => {
             const reader = new FileReader();
             reader.onload = function(event) {
                 const img = new Image();
                 img.onload = function() {
+                    const ratio = img.height / img.width;
+                    const defaultWidth = 50; // mm
+                    const defaultHeight = Math.round(defaultWidth * ratio);
+
                     uploadedStickers.push({
                         id: Date.now() + Math.random(),
                         img: img,
                         filename: file.name,
-                        widthMm: 50, // default lebar 50mm (5cm)
-                        heightMm: Math.round((img.height / img.width) * 50),
+                        widthMm: defaultWidth,
+                        heightMm: defaultHeight,
+                        aspectRatio: ratio,
                         qty: 1
                     });
                     renderStickerList();
@@ -215,13 +483,18 @@
                 img.src = event.target.result;
             };
             reader.readAsDataURL(file);
-        }
+        });
+        this.value = ''; // Reset input
     });
 
     function renderStickerList() {
         const container = document.getElementById('stickerList');
+        const countSpan = document.getElementById('itemCount');
+        
+        countSpan.innerText = `${uploadedStickers.length} item`;
+
         if (uploadedStickers.length === 0) {
-            container.innerHTML = '<i>Belum ada gambar.</i>';
+            container.innerHTML = '<div class="empty-state">Belum ada gambar yang di-upload.</div>';
             return;
         }
 
@@ -230,21 +503,24 @@
             const div = document.createElement('div');
             div.className = 'sticker-item';
             div.innerHTML = `
-                <img src="${item.img.src}">
-                <div>
-                    <strong style="font-size:0.8em; display:block; text-overflow: ellipsis; overflow: hidden;">${item.filename}</strong>
-                    <div class="item-controls">
+                <button class="btn-delete" title="Hapus" onclick="removeItem(${index})">×</button>
+                <div class="sticker-thumb-wrapper">
+                    <img src="${item.img.src}">
+                </div>
+                <div class="sticker-details">
+                    <div class="sticker-filename">${item.filename}</div>
+                    <div class="sticker-inputs">
                         <div>
                             <label>L (mm)</label>
-                            <input type="number" value="${item.widthMm}" onchange="updateItem(${index}, 'widthMm', this.value)">
+                            <input type="number" value="${item.widthMm}" oninput="updateItemSize(${index}, 'width', this.value)">
                         </div>
                         <div>
                             <label>T (mm)</label>
-                            <input type="number" value="${item.heightMm}" onchange="updateItem(${index}, 'heightMm', this.value)">
+                            <input type="number" value="${item.heightMm}" oninput="updateItemSize(${index}, 'height', this.value)">
                         </div>
                         <div>
                             <label>Qty</label>
-                            <input type="number" value="${item.qty}" min="1" onchange="updateItem(${index}, 'qty', this.value)">
+                            <input type="number" value="${item.qty}" min="1" onchange="updateQty(${index}, this.value)">
                         </div>
                     </div>
                 </div>
@@ -253,27 +529,47 @@
         });
     }
 
-    function updateItem(index, prop, val) {
-        val = parseFloat(val) || 0;
-        if (prop === 'widthMm') {
-            const ratio = uploadedStickers[index].img.height / uploadedStickers[index].img.width;
-            uploadedStickers[index].widthMm = val;
-            uploadedStickers[index].heightMm = Math.round(val * ratio);
-        } else {
-            uploadedStickers[index][prop] = val;
+    function updateItemSize(index, changedProp, val) {
+        const numVal = parseFloat(val);
+        if (isNaN(numVal) || numVal <= 0) return;
+
+        const item = uploadedStickers[index];
+        if (changedProp === 'width') {
+            item.widthMm = numVal;
+            item.heightMm = Math.round(numVal * item.aspectRatio);
+        } else if (changedProp === 'height') {
+            item.heightMm = numVal;
+            item.widthMm = Math.round(numVal / item.aspectRatio);
         }
+
+        // Update nilainya di input tanpa merender ulang seluruh list (agar fokus cursor tidak hilang)
+        const items = document.querySelectorAll('.sticker-item');
+        if (items[index]) {
+            const inputs = items[index].querySelectorAll('.sticker-inputs input');
+            inputs[0].value = item.widthMm;
+            inputs[1].value = item.heightMm;
+        }
+    }
+
+    function updateQty(index, val) {
+        const numVal = parseInt(val) || 1;
+        uploadedStickers[index].qty = Math.max(1, numVal);
+    }
+
+    function removeItem(index) {
+        uploadedStickers.splice(index, 1);
         renderStickerList();
     }
 
     function generateLayout() {
         if (uploadedStickers.length === 0) {
-            alert("Upload minimal 1 gambar stiker!");
+            alert("Silakan upload minimal 1 gambar stiker!");
             return;
         }
 
         const sizeOption = document.getElementById('sheetSize').value;
-        const marginMm = parseFloat(document.getElementById('sheetMargin').value);
-        const gapMm = parseFloat(document.getElementById('stickerGap').value);
+        const marginMm = parseFloat(document.getElementById('sheetMargin').value) || 0;
+        const gapMm = parseFloat(document.getElementById('stickerGap').value) || 0;
 
         let sheetW_mm = 297;
         let sheetH_mm = 420;
@@ -291,7 +587,7 @@
         const margin = MM_TO_PX(marginMm);
         const gap = MM_TO_PX(gapMm);
 
-        // Setup Canvas Cetak
+        // Canvas Cetak Setup
         const pCanvas = document.getElementById('printCanvas');
         pCanvas.width = sheetW;
         pCanvas.height = sheetH;
@@ -299,7 +595,7 @@
         pCtx.fillStyle = '#FFFFFF';
         pCtx.fillRect(0, 0, sheetW, sheetH);
 
-        // Setup Canvas Cutting
+        // Canvas Cutting Setup
         const cCanvas = document.getElementById('cutCanvas');
         cCanvas.width = sheetW;
         cCanvas.height = sheetH;
@@ -307,7 +603,6 @@
         cCtx.fillStyle = '#FFFFFF';
         cCtx.fillRect(0, 0, sheetW, sheetH);
 
-        // Algoritma Grid placing
         let curX = margin;
         let curY = margin;
         let maxRowHeight = 0;
@@ -317,30 +612,27 @@
             const itemH = MM_TO_PX(item.heightMm);
 
             for (let i = 0; i < item.qty; i++) {
-                // Cek apakah muat di baris ini
                 if (curX + itemW > sheetW - margin) {
                     curX = margin;
                     curY += maxRowHeight + gap;
                     maxRowHeight = 0;
                 }
 
-                // Cek apakah kertas muat (vertikal)
                 if (curY + itemH > sheetH - margin) {
-                    console.warn(`Lembaran ${sizeOption} penuh! Beberapa stiker tidak muat.`);
+                    console.warn(`Lembaran ${sizeOption} penuh! Beberapa stiker tidak dapat dimasukkan.`);
                     break;
                 }
 
-                // Draw di Canvas Cetak
+                // Render gambar asli untuk Print
                 pCtx.drawImage(item.img, curX, curY, itemW, itemH);
 
-                // Draw Silhouette/Cutline di Canvas Cutting
+                // Render siluet hitam untuk Cutting
                 const tempCanvas = document.createElement('canvas');
                 tempCanvas.width = itemW;
                 tempCanvas.height = itemH;
                 const tempCtx = tempCanvas.getContext('2d');
                 tempCtx.drawImage(item.img, 0, 0, itemW, itemH);
                 
-                // Ubah piksel non-transparan jadi hitam
                 const imgData = tempCtx.getImageData(0, 0, itemW, itemH);
                 const data = imgData.data;
                 for (let j = 0; j < data.length; j += 4) {
@@ -348,38 +640,4 @@
                         data[j] = 0;     
                         data[j + 1] = 0; 
                         data[j + 2] = 0; 
-                        data[j + 3] = 255; 
-                    }
-                }
-                tempCtx.putImageData(imgData, 0, 0);
-
-                cCtx.drawImage(tempCanvas, curX, curY);
-
-                // Update Posisi X selanjutnya
-                curX += itemW + gap;
-                if (itemH > maxRowHeight) maxRowHeight = itemH;
-            }
-        });
-
-        document.getElementById('actionButtons').style.display = 'flex';
-    }
-
-    function downloadCetak() {
-        const sizeOption = document.getElementById('sheetSize').value;
-        const link = document.createElement('a');
-        link.download = `File_Cetak_Sticker_${sizeOption}.png`;
-        link.href = document.getElementById('printCanvas').toDataURL('image/png', 1.0);
-        link.click();
-    }
-
-    function downloadCutting() {
-        const sizeOption = document.getElementById('sheetSize').value;
-        const link = document.createElement('a');
-        link.download = `File_Cutting_Sticker_${sizeOption}.png`;
-        link.href = document.getElementById('cutCanvas').toDataURL('image/png', 1.0);
-        link.click();
-    }
-</script>
-
-</body>
-</html>
+      
